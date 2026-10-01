@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
@@ -16,25 +16,11 @@ export default function ProveedorCompras() {
   const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      const [{ data: sup }, { data: ords }] = await Promise.all([
-        supabase.from('suppliers').select('*').eq('id', id).single(),
-        supabase
-          .from('purchase_orders')
-          .select(`
-            *,
-            purchase_order_items(quantity, notes),
-            profiles(first_name, last_name)
-          `)
-          .eq('supplier_id', id)
-          .order('created_at', { ascending: false }),
-      ])
-      if (sup) setSupplier(sup)
-      setOrders(ords ?? [])
-      setLoading(false)
-    }
-    fetchData()
+    const sup  = db.getSupplierById(id)
+    const ords = db.getPurchaseOrdersBySupplier(id)
+    setSupplier(sup)
+    setOrders(ords)
+    setLoading(false)
   }, [id])
 
   const exportPDF = () => {
@@ -42,27 +28,25 @@ export default function ProveedorCompras() {
     const doc = new jsPDF()
     const now = new Date()
 
-    // Header
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.text('BROASTERÍA BRENA', 105, 18, { align: 'center' })
+    doc.text('BROASTERIA BRENA', 105, 18, { align: 'center' })
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Historial de Compras — ${supplier.first_name} ${supplier.last_name}`, 105, 26, { align: 'center' })
+    doc.text('Historial de Compras — ' + supplier.first_name + ' ' + supplier.last_name, 105, 26, { align: 'center' })
     doc.setFontSize(9)
-    doc.text(`Tel: ${supplier.phone}`, 105, 32, { align: 'center' })
-    doc.text(`Generado: ${now.toLocaleDateString('es-BO')} ${now.toLocaleTimeString('es-BO')}`, 105, 38, { align: 'center' })
+    doc.text('Tel: ' + supplier.phone, 105, 32, { align: 'center' })
+    doc.text('Generado: ' + now.toLocaleDateString('es-BO') + ' ' + now.toLocaleTimeString('es-BO'), 105, 38, { align: 'center' })
 
-    // Tabla
     const rows = orders.map(o => {
-      const item = o.purchase_order_items?.[0]
-      const pieces = item?.quantity ?? 0
+      const item    = o.purchase_order_items?.[0]
+      const pieces  = item?.quantity ?? 0
       const chickens = Math.floor(pieces / 10)
       return [
         new Date(o.created_at).toLocaleDateString('es-BO'),
         chickens,
         pieces,
-        `${o.profiles?.first_name ?? ''} ${o.profiles?.last_name ?? ''}`.trim(),
+        o.profiles ? (o.profiles.first_name + ' ' + o.profiles.last_name).trim() : '',
         o.notes ?? '',
       ]
     })
@@ -71,12 +55,12 @@ export default function ProveedorCompras() {
       startY: 44,
       head: [['Fecha', 'Pollos', 'Presas', 'Registrado por', 'Notas']],
       body: rows,
-      styles:       { fontSize: 9 },
-      headStyles:   { fillColor: [249, 115, 22] },
+      styles:     { fontSize: 9 },
+      headStyles: { fillColor: [249, 115, 22] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
     })
 
-    doc.save(`compras-${supplier.first_name}-${supplier.last_name}.pdf`)
+    doc.save('compras-' + supplier.first_name + '-' + supplier.last_name + '.pdf')
     toast.success('PDF generado correctamente')
   }
 
@@ -117,9 +101,9 @@ export default function ProveedorCompras() {
       {/* Resumen */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Total Compras', value: orders.length, icon: Hash },
-          { label: 'Pollos Totales', value: totalChickens, icon: ShoppingBag },
-          { label: 'Presas Totales', value: totalPieces.toLocaleString(), icon: Calendar },
+          { label: 'Total Compras',   value: orders.length,             icon: Hash      },
+          { label: 'Pollos Totales',  value: totalChickens,             icon: ShoppingBag },
+          { label: 'Presas Totales',  value: totalPieces.toLocaleString(), icon: Calendar },
         ].map(({ label, value, icon: Icon }) => (
           <div key={label} className="card text-center">
             <Icon size={20} className="text-brand-500 mx-auto mb-2" />
@@ -172,11 +156,11 @@ export default function ProveedorCompras() {
                       <span className="text-white/40 text-xs ml-1">presas</span>
                     </td>
                     <td className="text-white/60 text-sm">
-                      {o.profiles ? `${o.profiles.first_name} ${o.profiles.last_name}` : '—'}
+                      {o.profiles ? `${o.profiles.first_name} ${o.profiles.last_name}` : '-'}
                     </td>
                     <td className="text-white/40 text-xs">
                       <div className="flex items-center gap-1">
-                        {o.notes ? <><StickyNote size={11} />{o.notes}</> : '—'}
+                        {o.notes ? <><StickyNote size={11} />{o.notes}</> : '-'}
                       </div>
                     </td>
                   </tr>

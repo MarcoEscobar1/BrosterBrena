@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -18,25 +18,11 @@ export default function VentaDetalle() {
   const handleBack = () => navigate(profile?.role === 'admin' ? '/admin/ventas' : '/empleado/ventas')
 
   useEffect(() => {
-    const fetchSale = async () => {
-      setLoading(true)
-      const [{ data: saleData }, { data: itemsData }] = await Promise.all([
-        supabase
-          .from('sales')
-          .select(`*, profiles(first_name, last_name, username)`)
-          .eq('id', id)
-          .single(),
-        supabase
-          .from('sale_items')
-          .select('*')
-          .eq('sale_id', id)
-          .order('product_name'),
-      ])
-      setSale(saleData)
-      setItems(itemsData ?? [])
-      setLoading(false)
-    }
-    fetchSale()
+    const saleData  = db.getSaleById(id)
+    const itemsData = db.getSaleItems(id)
+    setSale(saleData)
+    setItems(itemsData)
+    setLoading(false)
   }, [id])
 
   const handlePrint = () => window.print()
@@ -48,9 +34,7 @@ export default function VentaDetalle() {
     return (
       <div className="p-6 text-center text-white/40">
         <p>Venta no encontrada</p>
-        <Button variant="secondary" className="mt-4" onClick={handleBack}>
-          Volver
-        </Button>
+        <Button variant="secondary" className="mt-4" onClick={handleBack}>Volver</Button>
       </div>
     )
   }
@@ -86,12 +70,12 @@ export default function VentaDetalle() {
       <div className="card bg-surface-400 font-mono">
         {/* Cabecera */}
         <div className="text-center border-b border-dashed border-white/15 pb-4 mb-4">
-          <p className="text-lg font-bold text-white">BROASTERÍA BRENA</p>
+          <p className="text-lg font-bold text-white">BROASTERIA BRENA</p>
           <p className="text-xs text-white/40 mt-1">Recibo N°: <span className="text-white font-semibold">{sale.receipt_number}</span></p>
           <p className="text-xs text-white/40">Fecha: <span className="text-white">{dateStr}</span></p>
           <p className="text-xs text-white/40">
             Atendido por: <span className="text-white">
-              {sale.profiles?.first_name} {sale.profiles?.last_name}
+              {sale.profiles ? `${sale.profiles.first_name} ${sale.profiles.last_name}` : '-'}
             </span>
           </p>
         </div>
@@ -133,7 +117,7 @@ export default function VentaDetalle() {
         {sale.is_admin_sale && (
           <div className="mt-4 border border-dashed border-brand-500/50 rounded-lg px-3 py-2 bg-brand-500/8 flex items-center justify-center gap-2">
             <AlertTriangle size={14} className="text-brand-400" />
-            <p className="text-brand-400 text-xs font-bold">CONSUMO INTERNO — SIN CARGO</p>
+            <p className="text-brand-400 text-xs font-bold">CONSUMO INTERNO - SIN CARGO</p>
           </div>
         )}
       </div>

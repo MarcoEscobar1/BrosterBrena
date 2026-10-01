@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -16,10 +16,10 @@ const createSchema = z.object({
   first_name: z.string().min(1, 'El nombre es obligatorio').trim(),
   last_name:  z.string().min(1, 'El apellido es obligatorio').trim(),
   phone:      z.string().min(1, 'El celular es obligatorio').trim(),
-  username:   z.string().min(3, 'Mínimo 3 caracteres').trim()
-              .regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, números y guiones bajos'),
+  username:   z.string().min(3, 'Minimo 3 caracteres').trim()
+              .regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, numeros y guiones bajos'),
   role:       z.enum(['admin', 'employee']),
-  password:   z.string().min(6, 'Mínimo 6 caracteres'),
+  password:   z.string().min(6, 'Minimo 6 caracteres'),
 })
 
 export default function Usuarios() {
@@ -34,14 +34,9 @@ export default function Usuarios() {
     defaultValues: { role: 'employee' },
   })
 
-  const fetchProfiles = async () => {
+  const fetchProfiles = () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('first_name')
-    if (error) toast.error('Error cargando usuarios')
-    else setProfiles(data ?? [])
+    setProfiles(db.getProfiles())
     setLoading(false)
   }
 
@@ -50,34 +45,8 @@ export default function Usuarios() {
   const onSubmit = async (values) => {
     setSaving(true)
     try {
-      const { data, error } = await supabase.functions.invoke('admin-create-user', {
-        body: {
-          first_name: values.first_name,
-          last_name:  values.last_name,
-          phone:      values.phone,
-          username:   values.username,
-          role:       values.role,
-          password:   values.password,
-        },
-      })
-
-      // FunctionsHttpError: el mensaje real está en el body de la respuesta
-      if (error) {
-        let msg = 'Error al crear usuario'
-        try {
-          // error.context es el Response object — extraer el JSON del body
-          const body = await error.context?.json?.()
-          msg = body?.error || error.message || msg
-        } catch {
-          msg = error.message || msg
-        }
-        throw new Error(msg)
-      }
-
-      if (data?.error) {
-        throw new Error(data.error)
-      }
-
+      const result = db.createProfile(values)
+      if (result.error) throw new Error(result.error)
       toast.success(`Usuario "${values.username}" creado exitosamente`)
       setModalOpen(false)
       reset()
@@ -89,13 +58,11 @@ export default function Usuarios() {
     }
   }
 
-  const toggleActive = async (profile) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_active: !profile.is_active })
-      .eq('id', profile.id)
-    if (error) toast.error('Error al actualizar')
-    else {
+  const toggleActive = (profile) => {
+    const result = db.toggleProfileActive(profile.id)
+    if (result.error) {
+      toast.error('Error al actualizar')
+    } else {
       toast.success(profile.is_active ? 'Usuario desactivado' : 'Usuario activado')
       fetchProfiles()
     }
@@ -125,7 +92,7 @@ export default function Usuarios() {
         </Button>
       </div>
 
-      {/* Búsqueda */}
+      {/* Busqueda */}
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
         <input
@@ -154,9 +121,7 @@ export default function Usuarios() {
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-white truncate">
-                    {p.first_name} {p.last_name}
-                  </p>
+                  <p className="font-semibold text-white truncate">{p.first_name} {p.last_name}</p>
                   <p className="text-xs text-white/40 font-mono">@{p.username}</p>
                 </div>
                 <div className="ml-auto shrink-0">
@@ -170,10 +135,10 @@ export default function Usuarios() {
               {/* Detalles */}
               <div className="flex items-center gap-2 text-xs text-white/40">
                 <Phone size={12} />
-                {p.phone ?? 'Sin teléfono'}
+                {p.phone ?? 'Sin telefono'}
               </div>
 
-              {/* Estado + acción */}
+              {/* Estado + accion */}
               <div className="flex items-center justify-between pt-1 border-t border-white/8">
                 <Badge variant={p.is_active ? 'green' : 'gray'}>
                   {p.is_active ? <UserCheck size={10} /> : <UserX size={10} />}
@@ -206,16 +171,16 @@ export default function Usuarios() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Crear Nuevo Usuario" size="md">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
-            <Input id="usr-fname" label="Nombre(s)" placeholder="Ej: María" error={errors.first_name?.message} {...register('first_name')} />
-            <Input id="usr-lname" label="Apellido(s)" placeholder="Ej: López" error={errors.last_name?.message} {...register('last_name')} />
+            <Input id="usr-fname" label="Nombre(s)" placeholder="Ej: Maria" error={errors.first_name?.message} {...register('first_name')} />
+            <Input id="usr-lname" label="Apellido(s)" placeholder="Ej: Lopez" error={errors.last_name?.message} {...register('last_name')} />
           </div>
-          <Input id="usr-phone" label="Número de celular" placeholder="Ej: 77712345" error={errors.phone?.message} {...register('phone')} />
+          <Input id="usr-phone" label="Numero de celular" placeholder="Ej: 77712345" error={errors.phone?.message} {...register('phone')} />
           <Input
             id="usr-username"
             label="Nombre de usuario"
             placeholder="Ej: maria_lopez"
             error={errors.username?.message}
-            helper="Solo letras, números y guiones bajos. No puede repetirse."
+            helper="Solo letras, numeros y guiones bajos. No puede repetirse."
             {...register('username')}
           />
           <Select id="usr-role" label="Rol" error={errors.role?.message} {...register('role')}>
@@ -224,16 +189,15 @@ export default function Usuarios() {
           </Select>
           <Input
             id="usr-pass"
-            label="Contraseña"
+            label="Contrasena"
             type="password"
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Minimo 6 caracteres"
             error={errors.password?.message}
             {...register('password')}
           />
 
-          {/* Advertencia */}
           <div className="bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 text-xs text-brand-400">
-            ⚠ El usuario podrá iniciar sesión inmediatamente con estas credenciales.
+            El usuario podra iniciar sesion inmediatamente con estas credenciales.
           </div>
 
           <div className="flex gap-3 pt-2">

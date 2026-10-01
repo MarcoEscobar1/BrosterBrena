@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Spinner from '../../components/ui/Spinner'
 import Badge from '../../components/ui/Badge'
 import {
@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from 'recharts'
+import toast from 'react-hot-toast'
 
 const PERIODS = [
   { key: 'today',  label: 'Hoy' },
@@ -45,10 +46,10 @@ function getDateRange(period) {
 
 function MetricCard({ icon: Icon, label, value, sub, color = 'brand' }) {
   const colors = {
-    brand:   'text-brand-400 bg-brand-500/15 border-brand-500/30',
-    green:   'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
-    yellow:  'text-yellow-400 bg-yellow-500/15 border-yellow-500/30',
-    red:     'text-red-400 bg-red-500/15 border-red-500/30',
+    brand:  'text-brand-400 bg-brand-500/15 border-brand-500/30',
+    green:  'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+    yellow: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30',
+    red:    'text-red-400 bg-red-500/15 border-red-500/30',
   }
   return (
     <div className="card flex items-center gap-4">
@@ -77,48 +78,40 @@ export default function Dashboard() {
     lastSales:    [],
   })
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = () => {
     setLoading(true)
     try {
       const { from, to } = getDateRange(period)
+      const { sales, byEmployee, inventory } = db.getDashboardData({ from, to })
+      const lastSales = db.getLastSales(8)
 
-      const [
-        { data: sales },
-        { data: dailyEmp },
-        { data: stock },
-        { data: lastSales },
-      ] = await Promise.all([
-        supabase.from('v_sales_detail').select('*').gte('created_at', from).lte('created_at', to),
-        supabase.from('v_daily_sales_by_employee').select('*'),
-        supabase.from('inventory_items').select('*'),
-        supabase.from('v_sales_detail').select('*').order('created_at', { ascending: false }).limit(8),
-      ])
-
-      const normalSales  = (sales ?? []).filter(s => !s.is_admin_sale)
+      const normalSales  = sales.filter(s => !s.is_admin_sale)
       const income       = normalSales.reduce((a, s) => a + Number(s.total_amount), 0)
-      const transactions = (sales ?? []).length
+      const transactions = sales.length
 
-      // Datos para el gráfico: agrupar por fecha/hora
+      // Datos para el grafico
       const grouped = {}
-      ;(sales ?? []).forEach(s => {
+      sales.forEach(s => {
         const key = period === 'today'
           ? new Date(s.created_at).toLocaleTimeString('es-BO', { hour: '2-digit' }) + 'h'
           : new Date(s.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' })
         if (!grouped[key]) grouped[key] = { name: key, normal: 0, admin: 0 }
-        if (s.is_admin_sale) grouped[key].admin += Number(s.total_amount)
+        if (s.is_admin_sale) grouped[key].admin  += Number(s.total_amount)
         else                 grouped[key].normal += Number(s.total_amount)
       })
       const chartData = Object.values(grouped)
 
-      setData({ income, transactions, byEmployee: dailyEmp ?? [], chartData, stock: stock ?? [], lastSales: lastSales ?? [] })
+      setData({ income, transactions, byEmployee, chartData, stock: inventory, lastSales })
     } catch (err) {
-      toast.error('Error cargando resumen del dashboard')
-    } finally { setLoading(false) }
+      toast.error('Error cargando dashboard')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchDashboard() }, [period])
 
-  const stockItem = data.stock.find(s => s.slug === 'chicken_pieces')
+  const stockItem  = data.stock.find(s => s.slug === 'chicken_pieces')
   const stockStatus = stockItem
     ? (stockItem.quantity === 0 ? 'red' : stockItem.quantity <= stockItem.min_stock ? 'yellow' : 'green')
     : 'yellow'
@@ -133,11 +126,11 @@ export default function Dashboard() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Dashboard</h1>
-            <p className="text-xs text-white/40">Métricas del negocio</p>
+            <p className="text-xs text-white/40">Metricas del negocio</p>
           </div>
         </div>
         <div className="flex gap-2 items-center">
-          {/* Selector de período */}
+          {/* Selector de periodo */}
           <div className="flex gap-1 bg-surface-400 p-1 rounded-xl">
             {PERIODS.map(p => (
               <button
@@ -166,10 +159,10 @@ export default function Dashboard() {
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : (
         <>
-          {/* Métricas */}
+          {/* Metricas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
-              icon={TrendingUp} label="Ingresos del período" color="green"
+              icon={TrendingUp} label="Ingresos del periodo" color="green"
               value={`Bs ${data.income.toFixed(2)}`}
               sub="Solo ventas normales"
             />
@@ -184,19 +177,19 @@ export default function Dashboard() {
             />
             <MetricCard
               icon={Warehouse} label="Stock de presas" color={stockStatus}
-              value={stockItem ? Math.floor(stockItem.quantity) : '—'}
-              sub={stockItem ? `Mínimo: ${stockItem.min_stock}` : 'Sin datos'}
+              value={stockItem ? Math.floor(stockItem.quantity) : '-'}
+              sub={stockItem ? `Minimo: ${stockItem.min_stock}` : 'Sin datos'}
             />
           </div>
 
-          {/* Gráfico + Ventas por empleado */}
+          {/* Grafico + Ventas por empleado */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            {/* Gráfico */}
+            {/* Grafico */}
             <div className="card xl:col-span-2">
-              <p className="font-semibold text-white mb-4">Ventas por período</p>
+              <p className="font-semibold text-white mb-4">Ventas por periodo</p>
               {data.chartData.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-white/30">
-                  <p className="text-sm">Sin datos para este período</p>
+                  <p className="text-sm">Sin datos para este periodo</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
@@ -220,7 +213,7 @@ export default function Dashboard() {
 
             {/* Por empleado */}
             <div className="card flex flex-col gap-3">
-              <p className="font-semibold text-white">Ventas del día — Por empleado</p>
+              <p className="font-semibold text-white">Ventas del dia — Por empleado</p>
               {data.byEmployee.length === 0 ? (
                 <p className="text-white/30 text-sm">Sin datos</p>
               ) : (
@@ -244,10 +237,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Últimas ventas */}
+          {/* Ultimas ventas */}
           <div className="card p-0 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-              <h2 className="font-semibold text-white">Últimas Ventas</h2>
+              <h2 className="font-semibold text-white">Ultimas Ventas</h2>
               <button
                 onClick={() => navigate('/admin/ventas')}
                 className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
@@ -262,7 +255,7 @@ export default function Dashboard() {
                   <th>Empleado</th>
                   <th>Total</th>
                   <th>Tipo</th>
-                  <th className="text-right">Acción</th>
+                  <th className="text-right">Accion</th>
                 </tr>
               </thead>
               <tbody>

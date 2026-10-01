@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -16,37 +16,31 @@ const productSchema = z.object({
   name:                    z.string().min(1, 'El nombre es obligatorio').trim(),
   description:             z.string().optional(),
   price:                   z.coerce.number().min(0.01, 'El precio debe ser mayor a 0'),
-  category:                z.enum(['plato', 'refresco', 'extra'], { required_error: 'Selecciona una categoría' }),
+  category:                z.enum(['plato', 'refresco', 'extra'], { required_error: 'Selecciona una categoria' }),
   chicken_pieces_required: z.coerce.number().int().min(0, 'No puede ser negativo'),
   is_active:               z.boolean().optional(),
 })
 
-const CATEGORY_LABELS = { plato: 'Plato', refresco: 'Refresco', extra: 'Extra' }
+const CATEGORY_LABELS   = { plato: 'Plato', refresco: 'Refresco', extra: 'Extra' }
 const CATEGORY_VARIANTS = { plato: 'orange', refresco: 'purple', extra: 'yellow' }
 
 export default function Productos() {
-  const [products,   setProducts]   = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [search,     setSearch]     = useState('')
-  const [filterCat,  setFilterCat]  = useState('all')
-  const [modalOpen,  setModalOpen]  = useState(false)
-  const [editing,    setEditing]    = useState(null) // producto siendo editado
-  const [saving,     setSaving]     = useState(false)
+  const [products,  setProducts]  = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [search,    setSearch]    = useState('')
+  const [filterCat, setFilterCat] = useState('all')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing,   setEditing]   = useState(null)
+  const [saving,    setSaving]    = useState(false)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(productSchema),
     defaultValues: { is_active: true, chicken_pieces_required: 0 },
   })
 
-  const fetchProducts = async () => {
+  const fetchProducts = () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('category')
-      .order('name')
-    if (error) toast.error('Error cargando productos')
-    else setProducts(data ?? [])
+    setProducts(db.getProducts())
     setLoading(false)
   }
 
@@ -75,17 +69,12 @@ export default function Productos() {
     setSaving(true)
     try {
       if (editing) {
-        const { error } = await supabase
-          .from('products')
-          .update(values)
-          .eq('id', editing.id)
-        if (error) throw error
+        const result = db.updateProduct(editing.id, values)
+        if (result.error) throw new Error(result.error)
         toast.success('Producto actualizado')
       } else {
-        const { error } = await supabase
-          .from('products')
-          .insert(values)
-        if (error) throw error
+        const result = db.createProduct(values)
+        if (result.error) throw new Error(result.error)
         toast.success('Producto creado')
       }
       setModalOpen(false)
@@ -97,19 +86,16 @@ export default function Productos() {
     }
   }
 
-  const toggleActive = async (product) => {
-    const { error } = await supabase
-      .from('products')
-      .update({ is_active: !product.is_active })
-      .eq('id', product.id)
-    if (error) toast.error('Error al actualizar')
-    else {
+  const toggleActive = (product) => {
+    const result = db.updateProduct(product.id, { is_active: !product.is_active })
+    if (result.error) {
+      toast.error('Error al actualizar')
+    } else {
       toast.success(product.is_active ? 'Producto desactivado' : 'Producto activado')
       fetchProducts()
     }
   }
 
-  // Filtros
   const filtered = products.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
     const matchCat    = filterCat === 'all' || p.category === filterCat
@@ -152,7 +138,7 @@ export default function Productos() {
           className="input-base w-40"
           style={{ colorScheme: 'dark' }}
         >
-          <option value="all">Todas las categorías</option>
+          <option value="all">Todas las categorias</option>
           <option value="plato">Platos</option>
           <option value="extra">Extras</option>
           <option value="refresco">Refrescos</option>
@@ -175,7 +161,7 @@ export default function Productos() {
             <thead>
               <tr>
                 <th>Nombre</th>
-                <th>Categoría</th>
+                <th>Categoria</th>
                 <th>Precio</th>
                 <th>Presas</th>
                 <th>Estado</th>
@@ -249,16 +235,16 @@ export default function Productos() {
           <Input
             id="prod-name"
             label="Nombre"
-            placeholder="Ej: Económico"
+            placeholder="Ej: Economico"
             error={errors.name?.message}
             {...register('name')}
           />
           <div>
             <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">
-              Descripción (opcional)
+              Descripcion (opcional)
             </label>
             <textarea
-              placeholder="Descripción del producto..."
+              placeholder="Descripcion del producto..."
               rows={2}
               className="input-base resize-none"
               {...register('description')}
@@ -287,7 +273,7 @@ export default function Productos() {
           </div>
           <Select
             id="prod-category"
-            label="Categoría"
+            label="Categoria"
             error={errors.category?.message}
             {...register('category')}
           >

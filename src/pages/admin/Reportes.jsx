@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -9,7 +9,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const REPORT_TYPES = [
-  { key: 'daily',   label: 'Ventas Diarias',   desc: 'Todas las ventas de un día' },
+  { key: 'daily',   label: 'Ventas Diarias',   desc: 'Todas las ventas de un dia' },
   { key: 'weekly',  label: 'Ventas Semanales',  desc: 'Ventas de una semana' },
   { key: 'monthly', label: 'Ventas Mensuales',  desc: 'Ventas de un mes' },
 ]
@@ -25,9 +25,9 @@ export default function Reportes() {
     const d = new Date(dateValue + 'T00:00:00')
     if (reportType === 'daily') {
       return {
-        from: d.toISOString().split('T')[0] + 'T00:00:00',
-        to:   d.toISOString().split('T')[0] + 'T23:59:59',
-        label: `Día: ${d.toLocaleDateString('es-BO', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+        from:  d.toISOString().split('T')[0] + 'T00:00:00',
+        to:    d.toISOString().split('T')[0] + 'T23:59:59',
+        label: 'Dia: ' + d.toLocaleDateString('es-BO', { day: '2-digit', month: 'long', year: 'numeric' }),
       }
     }
     if (reportType === 'weekly') {
@@ -37,9 +37,9 @@ export default function Reportes() {
       const sunday = new Date(monday)
       sunday.setDate(monday.getDate() + 6)
       return {
-        from: monday.toISOString().split('T')[0] + 'T00:00:00',
-        to:   sunday.toISOString().split('T')[0]  + 'T23:59:59',
-        label: `Semana: ${monday.toLocaleDateString('es-BO')} — ${sunday.toLocaleDateString('es-BO')}`,
+        from:  monday.toISOString().split('T')[0] + 'T00:00:00',
+        to:    sunday.toISOString().split('T')[0] + 'T23:59:59',
+        label: 'Semana: ' + monday.toLocaleDateString('es-BO') + ' - ' + sunday.toLocaleDateString('es-BO'),
       }
     }
     if (reportType === 'monthly') {
@@ -48,34 +48,27 @@ export default function Reportes() {
       const first = new Date(year, month, 1)
       const last  = new Date(year, month + 1, 0)
       return {
-        from: first.toISOString().split('T')[0] + 'T00:00:00',
-        to:   last.toISOString().split('T')[0]  + 'T23:59:59',
+        from:  first.toISOString().split('T')[0] + 'T00:00:00',
+        to:    last.toISOString().split('T')[0]  + 'T23:59:59',
         label: d.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' }),
       }
     }
   }
 
-  const fetchData = async () => {
+  const fetchData = () => {
     setLoading(true)
     try {
       const { from, to, label } = getDateRange()
-      const { data, error } = await supabase
-        .from('v_sales_detail')
-        .select('*')
-        .gte('created_at', from)
-        .lte('created_at', to)
-        .order('created_at', { ascending: true })
+      const { data } = db.getSales({ from, to, pageSize: 9999 })
 
-      if (error) throw error
-
-      const normalSales  = (data ?? []).filter(s => !s.is_admin_sale)
-      const adminSales   = (data ?? []).filter(s =>  s.is_admin_sale)
+      const normalSales  = data.filter(s => !s.is_admin_sale)
+      const adminSales   = data.filter(s =>  s.is_admin_sale)
       const normalTotal  = normalSales.reduce((a, s) => a + Number(s.total_amount), 0)
       const adminTotal   = adminSales.reduce( (a, s) => a + Number(s.total_amount), 0)
 
-      setPreview({ data: data ?? [], label, normalTotal, adminTotal, from, to })
+      setPreview({ data, label, normalTotal, adminTotal, from, to })
     } catch (err) {
-      toast.error('Error al cargar reporte de inventario')
+      toast.error('Error al cargar reporte')
     } finally {
       setLoading(false)
     }
@@ -83,24 +76,24 @@ export default function Reportes() {
 
   const exportPDF = () => {
     if (!preview) return
-    const doc  = new jsPDF()
-    const now  = new Date()
-    const adminName = `${profile?.first_name} ${profile?.last_name}`
+    const doc      = new jsPDF()
+    const now      = new Date()
+    const adminName = profile ? `${profile.first_name} ${profile.last_name}` : '-'
 
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.text('BROASTERÍA BRENA — Reporte de Ventas', 105, 16, { align: 'center' })
+    doc.text('BROASTERIA BRENA - Reporte de Ventas', 105, 16, { align: 'center' })
 
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Período: ${preview.label}`, 105, 24, { align: 'center' })
-    doc.text(`Generado por: ${adminName}   Fecha: ${now.toLocaleDateString('es-BO')} ${now.toLocaleTimeString('es-BO')}`, 105, 30, { align: 'center' })
+    doc.text('Periodo: ' + preview.label, 105, 24, { align: 'center' })
+    doc.text('Generado por: ' + adminName + '   Fecha: ' + now.toLocaleDateString('es-BO') + ' ' + now.toLocaleTimeString('es-BO'), 105, 30, { align: 'center' })
 
     const rows = preview.data.map(s => [
       s.receipt_number,
       new Date(s.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
       s.employee_name,
-      `Bs ${Number(s.total_amount).toFixed(2)}`,
+      'Bs ' + Number(s.total_amount).toFixed(2),
       s.is_admin_sale ? 'CONSUMO INTERNO' : 'Normal',
     ])
 
@@ -108,8 +101,8 @@ export default function Reportes() {
       startY: 36,
       head: [['N° Recibo', 'Fecha', 'Empleado', 'Total', 'Tipo']],
       body: rows,
-      styles:       { fontSize: 8 },
-      headStyles:   { fillColor: [249, 115, 22] },
+      styles:     { fontSize: 8 },
+      headStyles: { fillColor: [249, 115, 22] },
       didParseCell: (data) => {
         if (data.section === 'body' && data.cell.raw === 'CONSUMO INTERNO') {
           data.cell.styles.textColor = [249, 115, 22]
@@ -122,18 +115,18 @@ export default function Reportes() {
     doc.line(14, finalY, 196, finalY)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Subtotal ventas normales:`, 14, finalY + 8)
-    doc.text(`Bs ${preview.normalTotal.toFixed(2)}`, 196, finalY + 8, { align: 'right' })
+    doc.text('Subtotal ventas normales:', 14, finalY + 8)
+    doc.text('Bs ' + preview.normalTotal.toFixed(2), 196, finalY + 8, { align: 'right' })
     doc.setTextColor(249, 115, 22)
-    doc.text(`Ventas admin (sin ingreso):`, 14, finalY + 15)
-    doc.text(`Bs ${preview.adminTotal.toFixed(2)}`, 196, finalY + 15, { align: 'right' })
+    doc.text('Ventas admin (sin ingreso):', 14, finalY + 15)
+    doc.text('Bs ' + preview.adminTotal.toFixed(2), 196, finalY + 15, { align: 'right' })
     doc.setTextColor(0)
     doc.line(14, finalY + 19, 196, finalY + 19)
     doc.setFont('helvetica', 'bold')
-    doc.text(`TOTAL INGRESOS REALES:`, 14, finalY + 27)
-    doc.text(`Bs ${preview.normalTotal.toFixed(2)}`, 196, finalY + 27, { align: 'right' })
+    doc.text('TOTAL INGRESOS REALES:', 14, finalY + 27)
+    doc.text('Bs ' + preview.normalTotal.toFixed(2), 196, finalY + 27, { align: 'right' })
 
-    doc.save(`reporte-ventas-${reportType}-${dateValue}.pdf`)
+    doc.save('reporte-ventas-' + reportType + '-' + dateValue + '.pdf')
     toast.success('PDF generado correctamente')
   }
 
@@ -146,7 +139,7 @@ export default function Reportes() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">Reportes</h1>
-          <p className="text-xs text-white/40">Generación y exportación de PDFs</p>
+          <p className="text-xs text-white/40">Generacion y exportacion de PDFs</p>
         </div>
       </div>
 

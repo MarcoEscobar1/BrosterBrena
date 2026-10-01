@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
@@ -17,21 +17,21 @@ import {
 } from 'lucide-react'
 
 const purchaseSchema = z.object({
-  supplier_id: z.string().uuid('Selecciona un proveedor'),
+  supplier_id: z.string().min(1, 'Selecciona un proveedor'),
   chickens:    z.coerce.number().int().min(1, 'Debe ser al menos 1 pollo'),
   notes:       z.string().optional(),
 })
 
 const drinkAdjustSchema = z.object({
-  item_id:  z.string().uuid(),
+  item_id:  z.string().min(1, 'Selecciona un articulo'),
   quantity: z.coerce.number().int().min(1, 'Debe ser al menos 1 unidad'),
   notes:    z.string().optional(),
 })
 
 function getStockStatus(quantity, minStock) {
-  if (quantity === 0)        return { label: 'Sin Stock',  variant: 'red',    icon: AlertTriangle }
-  if (quantity <= minStock)  return { label: 'Stock Bajo', variant: 'yellow', icon: AlertTriangle }
-  return                            { label: 'Normal',     variant: 'green',  icon: CheckCircle  }
+  if (quantity === 0)       return { label: 'Sin Stock',  variant: 'red',    icon: AlertTriangle }
+  if (quantity <= minStock) return { label: 'Stock Bajo', variant: 'yellow', icon: AlertTriangle }
+  return                           { label: 'Normal',     variant: 'green',  icon: CheckCircle  }
 }
 
 const MOVEMENT_LABELS = {
@@ -42,64 +42,53 @@ const MOVEMENT_LABELS = {
 
 export default function Inventario() {
   const { profile } = useAuth()
-  const [items,       setItems]       = useState([])
-  const [movements,   setMovements]   = useState([])
-  const [suppliers,   setSuppliers]   = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [loadingMov,  setLoadingMov]  = useState(true)
-  const [modalOpen,   setModalOpen]   = useState(false)
-  const [drinkModal,  setDrinkModal]  = useState(false)
-  const [saving,      setSaving]      = useState(false)
+  const [items,      setItems]      = useState([])
+  const [movements,  setMovements]  = useState([])
+  const [suppliers,  setSuppliers]  = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [loadingMov, setLoadingMov] = useState(true)
+  const [modalOpen,  setModalOpen]  = useState(false)
+  const [drinkModal, setDrinkModal] = useState(false)
+  const [saving,     setSaving]     = useState(false)
 
-  // Formulario de compra de pollos
   const chickenForm = useForm({ resolver: zodResolver(purchaseSchema) })
   const watchChickens = chickenForm.watch('chickens', 0)
-
-  // Formulario de ajuste de refrescos
   const drinkForm = useForm({ resolver: zodResolver(drinkAdjustSchema) })
 
   const chickenItems = items.filter(i => i.slug === 'chicken_pieces')
   const drinkItems   = items.filter(i => i.slug !== 'chicken_pieces')
 
-  const fetchAll = async () => {
+  const fetchAll = () => {
     setLoading(true)
-    const [{ data: inv }, { data: sup }] = await Promise.all([
-      supabase.from('inventory_items').select('*').order('name'),
-      supabase.from('suppliers').select('id, first_name, last_name').eq('is_active', true).order('first_name'),
-    ])
-    setItems(inv ?? [])
-    setSuppliers(sup ?? [])
+    setItems(db.getInventory())
+    setSuppliers(db.getActiveSuppliers())
     setLoading(false)
   }
 
-  const fetchMovements = async () => {
+  const fetchMovements = () => {
     setLoadingMov(true)
-    const { data } = await supabase
-      .from('inventory_movements')
-      .select(`*, inventory_items(name), profiles(first_name, last_name)`)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    setMovements(data ?? [])
+    setMovements(db.getMovements(50))
     setLoadingMov(false)
   }
 
   useEffect(() => { fetchAll(); fetchMovements() }, [])
 
-  // ── Compra de pollos ────────────────────────────────────────────
+  // Compra de pollos
   const onChickenSubmit = async ({ supplier_id, chickens, notes }) => {
     setSaving(true)
     try {
-      const { data, error } = await supabase.rpc('register_purchase', {
-        p_supplier_id: supplier_id,
-        p_chickens:    chickens,
-        p_notes:       notes || null,
-        p_created_by:  profile.id,
+      const result = db.registerPurchase({
+        supplier_id,
+        chickens: Number(chickens),
+        notes:    notes || null,
+        created_by: profile.id,
       })
-      if (error) throw error
-      toast.success(`Compra registrada: +${data.pieces_added} presas (${data.chickens_added} pollos)`)
+      if (result.error) throw new Error(result.error)
+      toast.success(`Compra registrada: +${result.data.pieces_added} presas (${result.data.chickens_added} pollos)`)
       setModalOpen(false)
       chickenForm.reset()
-      fetchAll(); fetchMovements()
+      fetchAll()
+      fetchMovements()
     } catch (err) {
       toast.error(err.message || 'Error al registrar compra')
     } finally {
@@ -107,40 +96,30 @@ export default function Inventario() {
     }
   }
 
-  // ── Ajuste de stock de refrescos ─────────────────────────────────
+  // Ajuste de stock de refrescos
   const onDrinkSubmit = async ({ item_id, quantity, notes }) => {
     setSaving(true)
     try {
-      // Actualizar quantity en inventory_items
       const item = drinkItems.find(i => i.id === item_id)
-      if (!item) throw new Error('Artículo no encontrado')
+      if (!item) throw new Error('Articulo no encontrado')
 
-      const newQty = item.quantity + quantity
+      const newQty = item.quantity + Number(quantity)
+      const updateResult = db.updateInventoryItem(item_id, { quantity: newQty })
+      if (updateResult.error) throw new Error(updateResult.error)
 
-      const { error: updateErr } = await supabase
-        .from('inventory_items')
-        .update({ quantity: newQty })
-        .eq('id', item_id)
-
-      if (updateErr) throw updateErr
-
-      // Registrar movimiento
-      const { error: movErr } = await supabase
-        .from('inventory_movements')
-        .insert({
-          item_id:         item_id,
-          movement_type:   'purchase',
-          quantity_change: quantity,
-          notes:           notes || `Recarga manual: +${quantity} ${item.unit}(s)`,
-          created_by:      profile.id,
-        })
-
-      if (movErr) throw movErr
+      db.addInventoryMovement({
+        item_id,
+        movement_type:   'purchase',
+        quantity_change: Number(quantity),
+        notes: notes || `Recarga manual: +${quantity} ${item.unit}(s)`,
+        created_by: profile.id,
+      })
 
       toast.success(`+${quantity} ${item.unit}(s) agregados a ${item.name}`)
       setDrinkModal(false)
       drinkForm.reset()
-      fetchAll(); fetchMovements()
+      fetchAll()
+      fetchMovements()
     } catch (err) {
       toast.error(err.message || 'Error al ajustar stock')
     } finally {
@@ -186,8 +165,7 @@ export default function Inventario() {
         <div className="flex justify-center py-12"><Spinner size="lg" /></div>
       ) : (
         <div className="flex flex-col gap-6">
-
-          {/* ── Sección Pollos ── */}
+          {/* Seccion Pollos */}
           {chickenItems.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -200,7 +178,7 @@ export default function Inventario() {
             </div>
           )}
 
-          {/* ── Sección Refrescos ── */}
+          {/* Seccion Refrescos */}
           {drinkItems.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -219,7 +197,7 @@ export default function Inventario() {
       <div className="card p-0 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
           <h2 className="font-semibold text-white">Historial de Movimientos</h2>
-          <span className="text-xs text-white/40">Últimos 50</span>
+          <span className="text-xs text-white/40">Ultimos 50</span>
         </div>
         {loadingMov ? (
           <div className="flex justify-center py-12"><Spinner /></div>
@@ -233,7 +211,7 @@ export default function Inventario() {
             <thead>
               <tr>
                 <th>Tipo</th>
-                <th>Artículo</th>
+                <th>Articulo</th>
                 <th>Cambio</th>
                 <th>Notas</th>
                 <th>Realizado por</th>
@@ -258,9 +236,9 @@ export default function Inventario() {
                         {mov.quantity_change > 0 ? '+' : ''}{mov.quantity_change}
                       </span>
                     </td>
-                    <td className="text-white/50 text-xs max-w-xs truncate">{mov.notes ?? '—'}</td>
+                    <td className="text-white/50 text-xs max-w-xs truncate">{mov.notes ?? '-'}</td>
                     <td className="text-white/60 text-xs">
-                      {mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '—'}
+                      {mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}
                     </td>
                     <td className="text-white/40 text-xs">
                       {new Date(mov.created_at).toLocaleDateString('es-BO', {
@@ -279,7 +257,7 @@ export default function Inventario() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Registrar Compra de Pollos" size="md">
         <form onSubmit={chickenForm.handleSubmit(onChickenSubmit)} className="flex flex-col gap-4">
           <Select id="inv-supplier" label="Proveedor" error={chickenForm.formState.errors.supplier_id?.message} {...chickenForm.register('supplier_id')}>
-            <option value="">— Selecciona un proveedor —</option>
+            <option value="">- Selecciona un proveedor -</option>
             {suppliers.map(s => (
               <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>
             ))}
@@ -304,8 +282,8 @@ export default function Inventario() {
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
               <TrendingUp size={18} className="text-emerald-400 shrink-0" />
               <div>
-                <p className="text-sm text-emerald-400 font-semibold">+{watchChickens * 10} presas se agregarán al inventario</p>
-                <p className="text-xs text-white/40">{watchChickens} pollos × 10 presas/pollo</p>
+                <p className="text-sm text-emerald-400 font-semibold">+{watchChickens * 10} presas se agregaran al inventario</p>
+                <p className="text-xs text-white/40">{watchChickens} pollos x 10 presas/pollo</p>
               </div>
             </div>
           )}
@@ -326,7 +304,7 @@ export default function Inventario() {
             error={drinkForm.formState.errors.item_id?.message}
             {...drinkForm.register('item_id')}
           >
-            <option value="">— Selecciona un refresco —</option>
+            <option value="">- Selecciona un refresco -</option>
             {drinkItems.map(item => (
               <option key={item.id} value={item.id}>
                 {item.name} (stock actual: {Math.floor(item.quantity)})
@@ -358,7 +336,6 @@ export default function Inventario() {
   )
 }
 
-// ── Componente de card de stock reutilizable ─────────────────────
 function StockCard({ item }) {
   const status = getStockStatus(item.quantity, item.min_stock)
   const StatusIcon = status.icon
@@ -386,7 +363,7 @@ function StockCard({ item }) {
           }`}>
             {Math.floor(item.quantity)}
           </p>
-          <p className="text-xs text-white/30 mt-0.5">Mínimo: {item.min_stock} {item.unit}s</p>
+          <p className="text-xs text-white/30 mt-0.5">Minimo: {item.min_stock} {item.unit}s</p>
         </div>
         {status.variant !== 'green' && (
           <AlertTriangle size={20} className={

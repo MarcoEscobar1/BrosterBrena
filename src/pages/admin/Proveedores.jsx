@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -32,14 +32,9 @@ export default function Proveedores() {
     resolver: zodResolver(schema),
   })
 
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .order('first_name')
-    if (error) toast.error('Error cargando proveedores')
-    else setSuppliers(data ?? [])
+    setSuppliers(db.getSuppliers())
     setLoading(false)
   }
 
@@ -61,12 +56,12 @@ export default function Proveedores() {
     setSaving(true)
     try {
       if (editing) {
-        const { error } = await supabase.from('suppliers').update(values).eq('id', editing.id)
-        if (error) throw error
+        const result = db.updateSupplier(editing.id, values)
+        if (result.error) throw new Error(result.error)
         toast.success('Proveedor actualizado')
       } else {
-        const { error } = await supabase.from('suppliers').insert(values)
-        if (error) throw error
+        const result = db.createSupplier(values)
+        if (result.error) throw new Error(result.error)
         toast.success('Proveedor creado')
       }
       setModalOpen(false)
@@ -78,10 +73,14 @@ export default function Proveedores() {
     }
   }
 
-  const toggleActive = async (s) => {
-    const { error } = await supabase.from('suppliers').update({ is_active: !s.is_active }).eq('id', s.id)
-    if (error) toast.error('Error al actualizar')
-    else { toast.success(s.is_active ? 'Proveedor desactivado' : 'Proveedor activado'); fetchSuppliers() }
+  const toggleActive = (s) => {
+    const result = db.toggleSupplierActive(s.id)
+    if (result.error) {
+      toast.error('Error al actualizar')
+    } else {
+      toast.success(s.is_active ? 'Proveedor desactivado' : 'Proveedor activado')
+      fetchSuppliers()
+    }
   }
 
   const filtered = suppliers.filter(s =>
@@ -107,7 +106,7 @@ export default function Proveedores() {
         </Button>
       </div>
 
-      {/* Búsqueda */}
+      {/* Busqueda */}
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
         <input
@@ -132,8 +131,8 @@ export default function Proveedores() {
             <thead>
               <tr>
                 <th>Nombre</th>
-                <th>Teléfono</th>
-                <th>Descripción</th>
+                <th>Telefono</th>
+                <th>Descripcion</th>
                 <th>Estado</th>
                 <th className="!text-center">Acciones</th>
               </tr>
@@ -151,7 +150,7 @@ export default function Proveedores() {
                     </div>
                   </td>
                   <td className="text-white/50 text-xs max-w-xs truncate">
-                    {s.description ?? '—'}
+                    {s.description ?? '-'}
                   </td>
                   <td>
                     <Badge variant={s.is_active ? 'green' : 'gray'}>
@@ -200,9 +199,9 @@ export default function Proveedores() {
             <Input id="sup-fname" label="Nombre(s)" placeholder="Ej: Carlos" error={errors.first_name?.message} {...register('first_name')} />
             <Input id="sup-lname" label="Apellido(s)" placeholder="Ej: Mamani" error={errors.last_name?.message} {...register('last_name')} />
           </div>
-          <Input id="sup-phone" label="Número de celular" placeholder="Ej: 77712345" error={errors.phone?.message} {...register('phone')} />
+          <Input id="sup-phone" label="Numero de celular" placeholder="Ej: 77712345" error={errors.phone?.message} {...register('phone')} />
           <div>
-            <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">Descripción (qué nos provee)</label>
+            <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">Descripcion (que nos provee)</label>
             <textarea rows={2} placeholder="Ej: Pollos frescos del mercado central..." className="input-base resize-none" {...register('description')} />
           </div>
           <div className="flex gap-3 pt-2">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Spinner from '../../components/ui/Spinner'
 import Badge from '../../components/ui/Badge'
 import { Warehouse, AlertTriangle, CheckCircle } from 'lucide-react'
@@ -9,11 +9,8 @@ export default function InventarioEmpleado() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('inventory_items').select('*').order('name')
-      .then(({ data }) => {
-        setItems(data ?? [])
-        setLoading(false)
-      })
+    setItems(db.getInventory())
+    setLoading(false)
   }, [])
 
   return (
@@ -33,9 +30,9 @@ export default function InventarioEmpleado() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {items.map(item => {
-            const ok      = item.quantity > item.min_stock
-            const low     = item.quantity <= item.min_stock && item.quantity > 0
-            const empty   = item.quantity === 0
+            const ok    = item.quantity > item.min_stock
+            const low   = item.quantity <= item.min_stock && item.quantity > 0
+            const empty = item.quantity === 0
 
             return (
               <div
@@ -58,7 +55,7 @@ export default function InventarioEmpleado() {
                   {Math.floor(item.quantity)}
                 </p>
                 <p className="text-xs text-white/30 mt-1">
-                  {item.unit}s · Mínimo: {item.min_stock}
+                  {item.unit}s · Minimo: {item.min_stock}
                 </p>
               </div>
             )

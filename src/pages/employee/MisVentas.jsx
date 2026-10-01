@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
@@ -15,16 +15,9 @@ export default function MisVentas() {
   useEffect(() => {
     if (!profile) return
     const today = new Date().toISOString().split('T')[0]
-    supabase
-      .from('sales')
-      .select('*')
-      .eq('employee_id', profile.id)
-      .gte('created_at', today + 'T00:00:00')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setSales(data ?? [])
-        setLoading(false)
-      })
+    const result = db.getSalesByEmployee(profile.id, today + 'T00:00:00')
+    setSales(result)
+    setLoading(false)
   }, [profile])
 
   const total = sales.filter(s => !s.is_admin_sale).reduce((a, s) => a + Number(s.total_amount), 0)
@@ -36,11 +29,11 @@ export default function MisVentas() {
           <Receipt size={20} className="text-brand-400" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white">Mis Ventas del Día</h1>
+          <h1 className="text-xl font-bold text-white">Mis Ventas del Dia</h1>
           <p className="text-xs text-white/40">Solo tus ventas de hoy</p>
         </div>
         <div className="ml-auto card py-2 px-4">
-          <p className="text-xs text-white/40">Total del día</p>
+          <p className="text-xs text-white/40">Total del dia</p>
           <p className="text-lg font-bold text-emerald-400">Bs {total.toFixed(2)}</p>
         </div>
       </div>
@@ -51,7 +44,7 @@ export default function MisVentas() {
         ) : sales.length === 0 ? (
           <div className="text-center py-16 text-white/30">
             <Receipt size={40} strokeWidth={1} className="mx-auto mb-3" />
-            <p>Aún no tienes ventas hoy</p>
+            <p>Aun no tienes ventas hoy</p>
           </div>
         ) : (
           <table className="table-base">
@@ -61,7 +54,7 @@ export default function MisVentas() {
                 <th>Hora</th>
                 <th>Total</th>
                 <th>Tipo</th>
-                <th className="!text-center">Acción</th>
+                <th className="!text-center">Accion</th>
               </tr>
             </thead>
             <tbody>
@@ -84,7 +77,7 @@ export default function MisVentas() {
                   </td>
                   <td>
                     <div className="flex justify-center">
-                      <button 
+                      <button
                         onClick={() => navigate(`/empleado/ventas/${sale.id}`)}
                         className="p-1.5 rounded-lg hover:bg-white/8 text-white/40 hover:text-white transition-colors"
                       >

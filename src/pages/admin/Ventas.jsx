@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabaseClient'
+import { db } from '../../lib/mockDb'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
@@ -12,59 +12,39 @@ const PAGE_SIZE = 20
 export default function Ventas() {
   const navigate = useNavigate()
   const [sales,      setSales]      = useState([])
-  const [profiles,   setProfiles]   = useState([])
   const [loading,    setLoading]    = useState(true)
   const [total,      setTotal]      = useState(0)
   const [page,       setPage]       = useState(0)
 
-  // Filtros
   const [search,     setSearch]     = useState('')
-  const [filterEmp,  setFilterEmp]  = useState('all')
-  const [filterType, setFilterType] = useState('all') // all | normal | admin
+  const [filterType, setFilterType] = useState('all')
   const [dateFrom,   setDateFrom]   = useState('')
   const [dateTo,     setDateTo]     = useState('')
 
-  // Cargar empleados para el filtro
-  useEffect(() => {
-    supabase.from('profiles').select('id, first_name, last_name').eq('is_active', true)
-      .then(({ data }) => setProfiles(data ?? []))
-  }, [])
-
-  const fetchSales = useCallback(async () => {
+  const fetchSales = useCallback(() => {
     setLoading(true)
     try {
-      let query = supabase
-        .from('v_sales_detail')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-
-      if (search)     query = query.ilike('receipt_number', `%${search}%`)
-      if (filterEmp !== 'all') {
-        // filtramos por employee_id desde la vista
-        // Necesitamos join directo; usamos sales tabla
-      }
-      if (filterType === 'normal') query = query.eq('is_admin_sale', false)
-      if (filterType === 'admin')  query = query.eq('is_admin_sale', true)
-      if (dateFrom)   query = query.gte('created_at', dateFrom)
-      if (dateTo)     query = query.lte('created_at', dateTo + 'T23:59:59')
-
-      const { data, error, count } = await query
-      if (error) throw error
-      setSales(data ?? [])
-      setTotal(count ?? 0)
+      const result = db.getSales({
+        from:       dateFrom || undefined,
+        to:         dateTo ? dateTo + 'T23:59:59' : undefined,
+        search:     search || undefined,
+        filterType: filterType !== 'all' ? filterType : undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      })
+      setSales(result.data)
+      setTotal(result.total)
     } catch (err) {
       toast.error('Error cargando ventas')
     } finally {
       setLoading(false)
     }
-  }, [page, search, filterEmp, filterType, dateFrom, dateTo])
+  }, [page, search, filterType, dateFrom, dateTo])
 
   useEffect(() => { fetchSales() }, [fetchSales])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  // Calcular totales de la página
   const pageNormalTotal = sales.filter(s => !s.is_admin_sale).reduce((a, s) => a + Number(s.total_amount), 0)
   const pageAdminTotal  = sales.filter(s =>  s.is_admin_sale).reduce((a, s) => a + Number(s.total_amount), 0)
 
@@ -102,17 +82,17 @@ export default function Ventas() {
           className="input-base w-40" style={{ colorScheme: 'dark' }} />
         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0) }}
           className="input-base w-40" style={{ colorScheme: 'dark' }} />
-        <button onClick={() => { setSearch(''); setFilterEmp('all'); setFilterType('all'); setDateFrom(''); setDateTo(''); setPage(0) }}
+        <button onClick={() => { setSearch(''); setFilterType('all'); setDateFrom(''); setDateTo(''); setPage(0) }}
           className="btn-ghost btn-sm">
           Limpiar
         </button>
       </div>
 
-      {/* Resumen de página */}
+      {/* Resumen de pagina */}
       {sales.length > 0 && (
         <div className="flex gap-4">
           <div className="card py-3 px-4 flex items-center gap-2">
-            <span className="text-xs text-white/40">Ventas normales (página):</span>
+            <span className="text-xs text-white/40">Ventas normales (pagina):</span>
             <span className="font-bold text-white">Bs {pageNormalTotal.toFixed(2)}</span>
           </div>
           <div className="card py-3 px-4 flex items-center gap-2">
@@ -146,14 +126,9 @@ export default function Ventas() {
             </thead>
             <tbody>
               {sales.map(sale => (
-                <tr
-                  key={sale.id}
-                  className={sale.is_admin_sale ? 'admin-sale-row' : ''}
-                >
+                <tr key={sale.id} className={sale.is_admin_sale ? 'admin-sale-row' : ''}>
                   <td>
-                    <p className="font-mono text-xs font-semibold text-white/80">
-                      {sale.receipt_number}
-                    </p>
+                    <p className="font-mono text-xs font-semibold text-white/80">{sale.receipt_number}</p>
                   </td>
                   <td className="text-white/60 text-xs">
                     {new Date(sale.created_at).toLocaleDateString('es-BO', {
@@ -169,10 +144,7 @@ export default function Ventas() {
                   </td>
                   <td>
                     {sale.is_admin_sale ? (
-                      <Badge variant="orange">
-                        <AlertTriangle size={10} />
-                        Consumo Interno
-                      </Badge>
+                      <Badge variant="orange"><AlertTriangle size={10} />Consumo Interno</Badge>
                     ) : (
                       <Badge variant="green">Normal</Badge>
                     )}
@@ -195,18 +167,18 @@ export default function Ventas() {
         )}
       </div>
 
-      {/* Paginación */}
+      {/* Paginacion */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-white/40">
-            Página {page + 1} de {totalPages} · {total} ventas totales
+            Pagina {page + 1} de {totalPages} · {total} ventas totales
           </p>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
-              ← Anterior
+              Anterior
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
-              Siguiente →
+              Siguiente
             </Button>
           </div>
         </div>

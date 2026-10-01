@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { useState, useEffect, useCallback } from 'react'
+import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
 import { useCartStore } from '../../store/cartStore'
 import { ShoppingCart as CartIcon } from 'lucide-react'
@@ -10,114 +10,71 @@ import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
 
 const CATEGORIES = [
-  { key: 'plato',    label: '🍗 Platos',    },
-  { key: 'extra',    label: '🍟 Extras',    },
-  { key: 'refresco', label: '🥤 Refrescos', },
+  { key: 'plato',    label: 'Platos',    },
+  { key: 'extra',    label: 'Extras',    },
+  { key: 'refresco', label: 'Refrescos', },
 ]
 
 export default function POS() {
   const { profile, isAdmin } = useAuth()
   const { items, isAdminSale, addItem, clearCart } = useCartStore()
 
-  const [products,     setProducts]     = useState([])
-  const [inventory,    setInventory]    = useState({})
-  const [loading,      setLoading]      = useState(true)
-  const [confirming,   setConfirming]   = useState(false)
-  const [lastReceipt,  setLastReceipt]  = useState(null)
-  const [showReceipt,  setShowReceipt]  = useState(false)
-  const [isCartOpen,    setIsCartOpen]    = useState(false)
+  const [products,    setProducts]    = useState([])
+  const [inventory,   setInventory]   = useState({})
+  const [loading,     setLoading]     = useState(true)
+  const [confirming,  setConfirming]  = useState(false)
+  const [lastReceipt, setLastReceipt] = useState(null)
+  const [showReceipt, setShowReceipt] = useState(false)
+  const [isCartOpen,  setIsCartOpen]  = useState(false)
 
-  // Cargar productos activos y stock
-  useEffect(() => {
-    const loadData = async () => {
-      const [prodRes, invRes] = await Promise.all([
-        supabase.from('products').select('*').eq('is_active', true).order('name'),
-        supabase.from('inventory_items').select('slug, quantity')
-      ])
-
-      if (prodRes.error) {
-        toast.error('Error cargando productos')
-      } else {
-        setProducts(prodRes.data ?? [])
-      }
-
-      if (!invRes.error) {
-        const invMap = {}
-        invRes.data?.forEach(i => invMap[i.slug] = i.quantity)
-        setInventory(invMap)
-      }
-
-      setLoading(false)
-    }
-    loadData()
-
-    // Suscribirse a cambios en inventario (realtime)
-    const sub = supabase
-      .channel('pos_inventory_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, (payload) => {
-        setInventory(prev => ({
-          ...prev,
-          [payload.new.slug]: payload.new.quantity
-        }))
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(sub)
-    }
+  const loadData = useCallback(() => {
+    const prods = db.getProducts(true) // solo activos
+    const invMap = db.getInventoryMap()
+    setProducts(prods)
+    setInventory(invMap)
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // Calcular stock disponible
   const getAvailableStock = (product) => {
     if (product.category === 'refresco') {
-      return inventory[product.id] || 0
+      // Para refrescos usamos el slug del producto (por ahora inventario no vinculado a refresco por id)
+      return Infinity
     }
     if (product.chicken_pieces_required > 0) {
       const chickenStock = inventory['chicken_pieces'] || 0
       return Math.floor(chickenStock / product.chicken_pieces_required)
     }
-    return Infinity // Extras sin presas no tienen control de stock
+    return Infinity
   }
 
   // Validar y agregar al carrito
   const handleAddItem = (product) => {
-    const available = getAvailableStock(product)
-    
     if (product.chicken_pieces_required > 0) {
-      const chickenStock = inventory['chicken_pieces'] || 0
+      const chickenStock    = inventory['chicken_pieces'] || 0
       const cartChickenUsed = items.reduce((acc, i) => acc + (i.chicken_pieces * i.quantity), 0)
       if (cartChickenUsed + product.chicken_pieces_required > chickenStock) {
         toast.error(`Presas insuficientes. Solo quedan ${Math.floor(chickenStock - cartChickenUsed)} disponibles.`)
         return
       }
-    } else if (product.category === 'refresco') {
-      const inCart = items.find(i => i.product_id === product.id)?.quantity || 0
-      if (inCart + 1 > available) {
-        toast.error(`Stock insuficiente de ${product.name}. Quedan ${Math.floor(available)}.`)
-        return
-      }
     }
-
     addItem(product)
   }
 
-  // Validar y aumentar cantidad en el carrito
+  // Validar y aumentar cantidad en carrito
   const handleIncreaseQty = (item) => {
     const product = products.find(p => p.id === item.product_id)
     if (!product) return
 
     if (product.chicken_pieces_required > 0) {
-      const chickenStock = inventory['chicken_pieces'] || 0
+      const chickenStock    = inventory['chicken_pieces'] || 0
       const cartChickenUsed = items.reduce((acc, i) => acc + (i.chicken_pieces * i.quantity), 0)
       if (cartChickenUsed + product.chicken_pieces_required > chickenStock) {
         toast.error(`Presas insuficientes. Solo quedan ${Math.floor(chickenStock - cartChickenUsed)} disponibles.`)
-        return
-      }
-    } else if (product.category === 'refresco') {
-      const available = inventory[product.id] || 0
-      const inCart = items.find(i => i.product_id === product.id)?.quantity || 0
-      if (inCart + 1 > available) {
-        toast.error(`Stock insuficiente de ${product.name}. Quedan ${Math.floor(available)}.`)
         return
       }
     }
@@ -125,10 +82,10 @@ export default function POS() {
     useCartStore.getState().increaseQty(item.product_id)
   }
 
-  // Confirmar venta → RPC create_sale
-  const handleConfirmSale = async () => {
+  // Confirmar venta
+  const handleConfirmSale = () => {
     if (items.length === 0) {
-      toast.error('El carrito está vacío')
+      toast.error('El carrito esta vacio')
       return
     }
 
@@ -143,36 +100,31 @@ export default function POS() {
         chicken_pieces: i.chicken_pieces,
       }))
 
-      const { data, error } = await supabase.rpc('create_sale', {
-        p_employee_id:   profile.id,
-        p_is_admin_sale: isAdminSale,
-        p_items:         cartItems,
+      const result = db.createSale({
+        employee_id:   profile.id,
+        is_admin_sale: isAdminSale,
+        items:         cartItems,
       })
 
-      if (error) {
-        const msg = error.message?.replace('ERROR:  ', '')?.replace('HINT: ', '')?.split('\n')[0]
-        toast.error(msg || 'Error al procesar la venta')
+      if (result.error) {
+        toast.error(result.error)
         return
       }
 
       setLastReceipt({
-        ...data,
+        ...result.data,
         employee_name: `${profile.first_name} ${profile.last_name}`,
         is_admin_sale: isAdminSale,
         items: cartItems,
       })
-      clearCart()
-      setIsCartOpen(false) // Close mobile cart after sale
-      setShowReceipt(true)
-      toast.success(`Venta registrada: ${data.receipt_number}`)
 
-      // Refrescar inventario inmediatamente para actualizar UI
-      const invRes = await supabase.from('inventory_items').select('slug, quantity')
-      if (!invRes.error) {
-        const invMap = {}
-        invRes.data?.forEach(i => invMap[i.slug] = i.quantity)
-        setInventory(invMap)
-      }
+      clearCart()
+      setIsCartOpen(false)
+      setShowReceipt(true)
+      toast.success(`Venta registrada: ${result.data.receipt_number}`)
+
+      // Refrescar inventario
+      setInventory(db.getInventoryMap())
     } catch (err) {
       toast.error('Error inesperado. Intenta de nuevo.')
     } finally {
@@ -192,7 +144,7 @@ export default function POS() {
 
   return (
     <div className="flex h-full min-h-full w-full relative bg-surface-300">
-      {/* ── Panel Central: Catálogo ── */}
+      {/* Panel Central: Catalogo */}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         {/* Header del POS */}
         <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/8 bg-surface-200 shrink-0 shadow-sm relative z-10">
@@ -204,7 +156,7 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Grid de Productos Todo Junto */}
+        {/* Grid de Productos */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
           {products.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-white/30">
@@ -242,13 +194,13 @@ export default function POS() {
 
       {/* Mobile Cart Overlay */}
       {isCartOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" 
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsCartOpen(false)}
         />
       )}
 
-      {/* ── Panel Derecho: Carrito ── */}
+      {/* Panel Derecho: Carrito */}
       <div className={`
         fixed inset-y-0 right-0 z-50 transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0
         ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}
@@ -265,7 +217,7 @@ export default function POS() {
 
       {/* Floating Cart Button (Mobile Only) */}
       <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-sm px-4 pointer-events-none">
-        <button 
+        <button
           onClick={() => setIsCartOpen(true)}
           className="w-full flex items-center justify-between gap-3 px-6 py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white shadow-brand transition-transform active:scale-95 pointer-events-auto"
         >
@@ -288,7 +240,7 @@ export default function POS() {
         </button>
       </div>
 
-      {/* ── Modal de Recibo ── */}
+      {/* Modal de Recibo */}
       <ReceiptModal
         open={showReceipt}
         receipt={lastReceipt}
