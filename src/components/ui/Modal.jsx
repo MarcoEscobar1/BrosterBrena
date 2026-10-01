@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 
 /**
  * Modal reutilizable.
+ * En móvil se presenta como bottom-sheet.
  * size: 'sm' | 'md' | 'lg' | 'xl'
  */
 export default function Modal({
@@ -13,14 +14,13 @@ export default function Modal({
   size      = 'md',
   hideClose = false,
 }) {
-  const boxClass = {
-    sm: 'modal-box max-w-sm',
-    md: 'modal-box',
-    lg: 'modal-box-lg',
-    xl: 'modal-box-xl',
-  }[size] ?? 'modal-box'
+  const maxWClass = {
+    sm: 'sm:max-w-sm',
+    md: 'sm:max-w-lg',
+    lg: 'sm:max-w-2xl',
+    xl: 'sm:max-w-4xl',
+  }[size] ?? 'sm:max-w-lg'
 
-  // Cerrar con Escape
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape' && !hideClose) onClose?.()
   }, [onClose, hideClose])
@@ -40,20 +40,37 @@ export default function Modal({
 
   return (
     <div
-      className="modal-overlay"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget && !hideClose) onClose?.() }}
     >
-      <div className={boxClass} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`
+          bg-surface-50 w-full ${maxWClass} animate-slide-up
+          rounded-t-2xl sm:rounded-2xl shadow-2xl
+          max-h-[92dvh] overflow-y-auto
+          pb-safe
+        `}
+        style={{ border: '1px solid rgba(255,255,255,0.12)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Drag handle (solo móvil) */}
+        {!hideClose && (
+          <div className="sm:hidden flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-white/20" />
+          </div>
+        )}
+
         {/* Header */}
         {(title || !hideClose) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 sticky top-0 bg-surface-50 z-10">
             {title && (
               <h2 className="text-base font-semibold text-white">{title}</h2>
             )}
             {!hideClose && (
               <button
                 onClick={onClose}
-                className="ml-auto p-1.5 rounded-lg hover:bg-white/8 text-white/40 hover:text-white transition-colors"
+                className="ml-auto p-2 rounded-xl hover:bg-white/8 text-white/40 hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>
@@ -62,7 +79,7 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className="p-6">
+        <div className="p-5">
           {children}
         </div>
       </div>

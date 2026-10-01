@@ -74,11 +74,11 @@ export default function Usuarios() {
   )
 
   return (
-    <div className="p-6 flex flex-col gap-6 animate-fade-in">
+    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
             <Users size={20} className="text-brand-400" />
           </div>
           <div>
@@ -86,20 +86,20 @@ export default function Usuarios() {
             <p className="text-xs text-white/40">{profiles.length} usuarios registrados</p>
           </div>
         </div>
-        <Button variant="primary" onClick={() => { reset({ role: 'employee' }); setModalOpen(true) }}>
+        <Button variant="primary" size="sm" onClick={() => { reset({ role: 'employee' }); setModalOpen(true) }} className="w-full sm:w-auto">
           <Plus size={16} />
           Nuevo Usuario
         </Button>
       </div>
 
       {/* Busqueda */}
-      <div className="relative max-w-sm">
+      <div className="relative w-full sm:max-w-sm">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
         <input
           placeholder="Buscar usuario..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="input-base pl-9"
+          className="input-base pl-9 w-full"
         />
       </div>
 
@@ -107,7 +107,7 @@ export default function Usuarios() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map(p => (
             <div
               key={p.id}
@@ -120,8 +120,8 @@ export default function Usuarios() {
                     {p.first_name[0]?.toUpperCase()}
                   </span>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-white truncate">{p.first_name} {p.last_name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-white truncate text-sm sm:text-base">{p.first_name} {p.last_name}</p>
                   <p className="text-xs text-white/40 font-mono">@{p.username}</p>
                 </div>
                 <div className="ml-auto shrink-0">
@@ -146,7 +146,7 @@ export default function Usuarios() {
                 </Badge>
                 <button
                   onClick={() => toggleActive(p)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors active:scale-95 ${
                     p.is_active
                       ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
                       : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
@@ -170,7 +170,7 @@ export default function Usuarios() {
       {/* Modal Crear Usuario */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Crear Nuevo Usuario" size="md">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input id="usr-fname" label="Nombre(s)" placeholder="Ej: Maria" error={errors.first_name?.message} {...register('first_name')} />
             <Input id="usr-lname" label="Apellido(s)" placeholder="Ej: Lopez" error={errors.last_name?.message} {...register('last_name')} />
           </div>

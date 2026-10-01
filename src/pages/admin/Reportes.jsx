@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import toast from 'react-hot-toast'
-import { BarChart3, FileDown, AlertTriangle } from 'lucide-react'
+import { BarChart3, FileDown, AlertTriangle, Calendar } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -131,10 +131,10 @@ export default function Reportes() {
   }
 
   return (
-    <div className="p-6 flex flex-col gap-6 animate-fade-in">
+    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
           <BarChart3 size={20} className="text-brand-400" />
         </div>
         <div>
@@ -144,16 +144,16 @@ export default function Reportes() {
       </div>
 
       {/* Controles */}
-      <div className="card flex flex-wrap items-end gap-4">
+      <div className="card flex flex-col sm:flex-row flex-wrap sm:items-end gap-4">
         {/* Tipo de reporte */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
           <p className="text-xs text-white/40 uppercase tracking-wide font-medium">Tipo de Reporte</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {REPORT_TYPES.map(rt => (
               <button
                 key={rt.key}
                 onClick={() => setReportType(rt.key)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
+                className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 text-center ${
                   reportType === rt.key
                     ? 'bg-brand-500 text-white shadow-brand'
                     : 'bg-surface-400 text-white/50 hover:text-white hover:bg-surface-300 border border-white/8'
@@ -174,12 +174,12 @@ export default function Reportes() {
             type={reportType === 'monthly' ? 'month' : 'date'}
             value={reportType === 'monthly' ? dateValue.slice(0, 7) : dateValue}
             onChange={e => setDateValue(reportType === 'monthly' ? e.target.value + '-01' : e.target.value)}
-            className="input-base w-44"
+            className="input-base w-full sm:w-44"
             style={{ colorScheme: 'dark' }}
           />
         </div>
 
-        <Button variant="primary" onClick={fetchData} loading={loading}>
+        <Button variant="primary" onClick={fetchData} loading={loading} className="w-full sm:w-auto">
           Generar Reporte
         </Button>
       </div>
@@ -188,72 +188,101 @@ export default function Reportes() {
       {preview && (
         <div className="flex flex-col gap-4 animate-fade-in">
           {/* Resumen */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-white">Reporte: {preview.label}</h2>
+              <h2 className="font-semibold text-white text-base sm:text-lg">Reporte: {preview.label}</h2>
               <p className="text-xs text-white/40 mt-0.5">{preview.data.length} ventas encontradas</p>
             </div>
-            <Button variant="primary" onClick={exportPDF} disabled={preview.data.length === 0}>
+            <Button variant="primary" size="sm" onClick={exportPDF} disabled={preview.data.length === 0} className="w-full sm:w-auto">
               <FileDown size={16} />
               Exportar PDF
             </Button>
           </div>
 
           {/* Totales */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="card text-center">
-              <p className="text-xs text-white/40 mb-1">Ventas Normales</p>
-              <p className="text-2xl font-bold text-emerald-400">Bs {preview.normalTotal.toFixed(2)}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="card text-center py-4">
+              <p className="text-xs text-white/40 mb-1 uppercase tracking-wider font-semibold">Ventas Normales</p>
+              <p className="text-2xl sm:text-3xl font-black text-emerald-400">Bs {preview.normalTotal.toFixed(2)}</p>
               <p className="text-xs text-white/30 mt-0.5">{preview.data.filter(s => !s.is_admin_sale).length} ventas</p>
             </div>
-            <div className="card text-center border-brand-500/20">
-              <p className="text-xs text-white/40 mb-1 flex items-center justify-center gap-1">
+            <div className="card text-center py-4 border-brand-500/20">
+              <p className="text-xs text-white/40 mb-1 flex items-center justify-center gap-1 uppercase tracking-wider font-semibold">
                 <AlertTriangle size={11} className="text-brand-400" /> Consumo Interno
               </p>
-              <p className="text-2xl font-bold text-brand-400">Bs {preview.adminTotal.toFixed(2)}</p>
+              <p className="text-2xl sm:text-3xl font-black text-brand-400">Bs {preview.adminTotal.toFixed(2)}</p>
               <p className="text-xs text-white/30 mt-0.5">{preview.data.filter(s => s.is_admin_sale).length} ventas</p>
             </div>
-            <div className="card text-center">
-              <p className="text-xs text-white/40 mb-1">INGRESOS REALES</p>
-              <p className="text-2xl font-bold text-white">Bs {preview.normalTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/30 mt-0.5">Total real</p>
+            <div className="card text-center py-4">
+              <p className="text-xs text-white/40 mb-1 uppercase tracking-wider font-semibold">INGRESOS REALES</p>
+              <p className="text-2xl sm:text-3xl font-black text-white">Bs {preview.normalTotal.toFixed(2)}</p>
+              <p className="text-xs text-white/30 mt-0.5">Total real en caja</p>
             </div>
           </div>
 
           {/* Tabla preview */}
           {preview.data.length > 0 && (
-            <div className="card p-0 overflow-hidden max-h-96 overflow-y-auto">
-              <table className="table-base">
-                <thead className="sticky top-0 bg-surface-50">
-                  <tr>
-                    <th>N° Recibo</th>
-                    <th>Fecha</th>
-                    <th>Empleado</th>
-                    <th>Total</th>
-                    <th>Tipo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.data.map(sale => (
-                    <tr key={sale.id} className={sale.is_admin_sale ? 'admin-sale-row' : ''}>
-                      <td className="font-mono text-xs">{sale.receipt_number}</td>
-                      <td className="text-xs text-white/60">
-                        {new Date(sale.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="text-white/80">{sale.employee_name}</td>
-                      <td className={`font-semibold ${sale.is_admin_sale ? 'text-brand-400' : 'text-white'}`}>
+            <div className="card p-0 overflow-hidden">
+              {/* Móvil: Cards */}
+              <div className="block md:hidden divide-y divide-white/5 max-h-96 overflow-y-auto">
+                {preview.data.map(sale => (
+                  <div key={sale.id} className={`p-3.5 flex flex-col gap-1.5 ${sale.is_admin_sale ? 'bg-brand-500/5' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-white/80">{sale.receipt_number}</span>
+                      <span className={`font-black text-sm ${sale.is_admin_sale ? 'text-brand-400' : 'text-white'}`}>
                         Bs {Number(sale.total_amount).toFixed(2)}
-                      </td>
-                      <td>
-                        {sale.is_admin_sale
-                          ? <Badge variant="orange"><AlertTriangle size={10} />Interno</Badge>
-                          : <Badge variant="green">Normal</Badge>
-                        }
-                      </td>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-white/50">
+                      <span>{sale.employee_name}</span>
+                      <span>
+                        {new Date(sale.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="pt-1">
+                      {sale.is_admin_sale
+                        ? <Badge variant="orange"><AlertTriangle size={10} />Consumo Interno</Badge>
+                        : <Badge variant="green">Normal</Badge>
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tablet/Desktop: Tabla */}
+              <div className="hidden md:block max-h-96 overflow-y-auto overflow-x-auto">
+                <table className="table-base">
+                  <thead className="sticky top-0 bg-surface-50 z-10">
+                    <tr>
+                      <th>N° Recibo</th>
+                      <th>Fecha</th>
+                      <th>Empleado</th>
+                      <th>Total</th>
+                      <th>Tipo</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {preview.data.map(sale => (
+                      <tr key={sale.id} className={sale.is_admin_sale ? 'admin-sale-row' : ''}>
+                        <td className="font-mono text-xs">{sale.receipt_number}</td>
+                        <td className="text-xs text-white/60">
+                          {new Date(sale.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="text-white/80">{sale.employee_name}</td>
+                        <td className={`font-semibold ${sale.is_admin_sale ? 'text-brand-400' : 'text-white'}`}>
+                          Bs {Number(sale.total_amount).toFixed(2)}
+                        </td>
+                        <td>
+                          {sale.is_admin_sale
+                            ? <Badge variant="orange"><AlertTriangle size={10} />Interno</Badge>
+                            : <Badge variant="green">Normal</Badge>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

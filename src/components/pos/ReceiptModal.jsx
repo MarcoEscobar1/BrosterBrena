@@ -55,7 +55,7 @@ export default function ReceiptModal({ open, receipt, onClose }) {
       {/* Recibo visual */}
       <div
         ref={printRef}
-        className="bg-surface-400 rounded-xl p-5 font-mono text-sm border border-white/8 mb-4"
+        className="bg-surface-400 rounded-xl p-4 sm:p-5 font-mono text-xs sm:text-sm border border-white/8 mb-4 max-h-[58vh] overflow-y-auto"
         id="receipt-content"
       >
         {/* Cabecera */}

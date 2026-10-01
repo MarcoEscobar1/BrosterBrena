@@ -9,23 +9,36 @@
   * {
     box-sizing: border-box;
     border-color: rgba(255,255,255,0.10);
+    -webkit-tap-highlight-color: transparent;
   }
 
   html {
     @apply antialiased;
     scroll-behavior: smooth;
+    /* Evita zoom al tocar inputs en iOS */
+    font-size: 16px;
   }
 
   body {
     @apply bg-surface-300 text-white font-sans text-sm;
     min-height: 100vh;
+    min-height: 100dvh;
+    /* Previene scroll horizontal accidental */
+    overflow-x: hidden;
   }
 
-  /* Scrollbar custom */
-  ::-webkit-scrollbar       { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-surface-400; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
+  /* Scrollbar custom (solo escritorio) */
+  @media (min-width: 1024px) {
+    ::-webkit-scrollbar       { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { @apply bg-surface-400; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
+  }
+
+  /* Inputs no hacen zoom en iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* ─── Components ────────────────────────────────────────── */
@@ -33,7 +46,7 @@
 
   /* ── Cards ── */
   .card {
-    @apply bg-surface-50 rounded-xl p-5;
+    @apply bg-surface-50 rounded-xl p-4 md:p-5;
     border: 1px solid rgba(255,255,255,0.08);
   }
   .card-hover {
@@ -47,10 +60,12 @@
   /* ── Form inputs ── */
   .input-base {
     @apply w-full bg-surface-400 rounded-lg px-3.5 py-2.5
-           text-white placeholder-white/30 text-sm
+           text-white placeholder-white/30
            focus:outline-none focus:border-brand-500
            transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
     border: 1px solid rgba(255,255,255,0.15);
+    /* min-height touch-friendly */
+    min-height: 44px;
   }
   .input-base:focus {
     box-shadow: 0 0 0 2px rgba(227,10,23,0.20);
@@ -68,7 +83,8 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5
            text-sm font-semibold transition-all duration-150
            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface-300
-           disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
+           disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97];
+    min-height: 44px;
   }
   .btn-primary {
     @apply btn bg-brand-500 hover:bg-brand-600 text-white focus:ring-brand-500 shadow-brand;
@@ -86,7 +102,7 @@
   .btn-ghost:hover {
     background-color: rgba(255,255,255,0.08);
   }
-  .btn-sm  { @apply px-3 py-1.5 text-xs; }
+  .btn-sm  { @apply px-3 py-1.5 text-xs; min-height: 36px; }
   .btn-lg  { @apply px-6 py-3.5 text-base; }
   .btn-xl  { @apply px-8 py-4 text-base font-bold; }
 
@@ -125,11 +141,15 @@
     border: 1px solid rgba(168,85,247,0.30);
   }
 
-  /* ── Tables ── */
-  .table-base { @apply w-full text-sm; }
+  /* ── Tables — con scroll horizontal en móvil ── */
+  .table-container {
+    @apply w-full overflow-x-auto -mx-0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-base { @apply w-full text-sm; min-width: 480px; }
   .table-base thead tr { border-bottom: 1px solid rgba(255,255,255,0.10); }
   .table-base thead th {
-    @apply px-4 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider;
+    @apply px-4 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap;
   }
   .table-base tbody tr {
     @apply transition-colors duration-100;
@@ -138,7 +158,7 @@
   .table-base tbody tr:hover {
     background-color: rgba(255,255,255,0.03);
   }
-  .table-base tbody td { @apply px-4 py-3.5 text-white/80; }
+  .table-base tbody td { @apply px-4 py-3 text-white/80; }
 
   /* Admin sale row highlight */
   .admin-sale-row {
@@ -151,6 +171,7 @@
     @apply flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium
            text-white/60 hover:text-white transition-all duration-150
            cursor-pointer select-none;
+    min-height: 44px;
   }
   .nav-item:hover {
     background-color: rgba(255,255,255,0.08);
@@ -161,6 +182,16 @@
     border: 1px solid rgba(227,10,23,0.30);
   }
 
+  /* ── Bottom nav (móvil) ── */
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center gap-0.5 flex-1 py-2
+           text-white/40 transition-colors duration-150 cursor-pointer;
+    min-width: 0;
+  }
+  .bottom-nav-item-active {
+    @apply text-brand-400;
+  }
+
   /* ── Stock indicators ── */
   .stock-ok       { @apply text-emerald-400; }
   .stock-low      { @apply text-yellow-400; }
@@ -168,10 +199,11 @@
 
   /* ── POS product card ── */
   .product-card {
-    @apply flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl
+    @apply flex flex-col items-center justify-center gap-1.5 p-3 md:p-4 rounded-xl
            bg-surface-50 cursor-pointer
            active:scale-95 transition-all duration-150 select-none text-center;
     border: 1px solid rgba(255,255,255,0.10);
+    min-height: 80px;
   }
   .product-card:hover {
     background-color: rgba(227,10,23,0.08);
@@ -191,15 +223,40 @@
   /* ── Modal ── */
   .modal-overlay {
     @apply fixed inset-0 backdrop-blur-sm z-50
-           flex items-center justify-center p-4 animate-fade-in;
+           flex items-end sm:items-center justify-center sm:p-4 animate-fade-in;
     background-color: rgba(0,0,0,0.60);
   }
   .modal-box {
-    @apply bg-surface-50 rounded-2xl shadow-2xl w-full max-w-lg animate-slide-up;
+    @apply bg-surface-50 w-full sm:rounded-2xl shadow-2xl sm:max-w-lg animate-slide-up;
     border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+    overflow-y: auto;
   }
-  .modal-box-lg { @apply modal-box max-w-2xl; }
-  .modal-box-xl { @apply modal-box max-w-4xl; }
+  @media (min-width: 640px) {
+    .modal-box {
+      border-radius: 1rem;
+      max-height: 90vh;
+    }
+  }
+  .modal-box-lg { @apply modal-box sm:max-w-2xl; }
+  .modal-box-xl { @apply modal-box sm:max-w-4xl; }
+
+  /* ── Page header responsive ── */
+  .page-header {
+    @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3;
+  }
+  .page-header-left {
+    @apply flex items-center gap-3;
+  }
+  .page-header-icon {
+    @apply w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0;
+  }
+
+  /* ── Filtros barra ── */
+  .filters-bar {
+    @apply flex flex-wrap gap-2;
+  }
 }
 
 /* ─── Utilities ─────────────────────────────────────────── */
@@ -220,6 +277,13 @@
   }
   .animate-slide-up {
     animation: slideUp 0.22s ease-out both;
+  }
+  /* Safe area para notch/bottom bar en iOS */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
 

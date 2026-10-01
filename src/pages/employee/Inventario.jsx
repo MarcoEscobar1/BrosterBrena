@@ -14,9 +14,9 @@ export default function InventarioEmpleado() {
   }, [])
 
   return (
-    <div className="p-6 flex flex-col gap-6 animate-fade-in">
+    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
           <Warehouse size={20} className="text-brand-400" />
         </div>
         <div>
@@ -28,7 +28,7 @@ export default function InventarioEmpleado() {
       {loading ? (
         <div className="flex justify-center py-12"><Spinner size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {items.map(item => {
             const ok    = item.quantity > item.min_stock
             const low   = item.quantity <= item.min_stock && item.quantity > 0
@@ -44,14 +44,14 @@ export default function InventarioEmpleado() {
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <p className="font-semibold text-white">{item.name}</p>
+                  <p className="font-semibold text-white text-base">{item.name}</p>
                   <Badge variant={empty ? 'red' : low ? 'yellow' : 'green'}>
                     {empty ? <><AlertTriangle size={10} />Sin Stock</> :
                      low   ? <><AlertTriangle size={10} />Bajo</> :
                      <><CheckCircle size={10} />OK</>}
                   </Badge>
                 </div>
-                <p className={`text-4xl font-bold ${empty ? 'text-red-400' : low ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                <p className={`text-3xl sm:text-4xl font-bold ${empty ? 'text-red-400' : low ? 'text-yellow-400' : 'text-emerald-400'}`}>
                   {Math.floor(item.quantity)}
                 </p>
                 <p className="text-xs text-white/30 mt-1">

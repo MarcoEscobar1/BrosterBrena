@@ -7,6 +7,11 @@ import { create } from 'zustand'
 export const useCartStore = create((set, get) => ({
   items:        [],
   isAdminSale:  false,
+  isCartOpen:   false,
+
+  setIsCartOpen(open) {
+    set({ isCartOpen: open })
+  },
 
   // ─── Acciones ───────────────────────────────────────────
   addItem(product) {

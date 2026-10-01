@@ -69,7 +69,7 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
 
       {/* Footer con resumen y botón */}
       {items.length > 0 && (
-        <div className="px-5 py-6 border-t border-white/8 flex flex-col gap-4 bg-surface-200/30">
+        <div className="px-4 sm:px-5 py-4 sm:py-6 border-t border-white/8 flex flex-col gap-3 sm:gap-4 bg-surface-200/30 pb-safe">
           {/* Resumen de presas */}
           {totalPieces > 0 && (
             <div className="flex items-center justify-between text-xs text-brand-400 font-medium tracking-wide uppercase">

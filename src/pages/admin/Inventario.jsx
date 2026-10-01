@@ -133,11 +133,11 @@ export default function Inventario() {
   }
 
   return (
-    <div className="p-6 flex flex-col gap-6 animate-fade-in">
+    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
             <Warehouse size={20} className="text-brand-400" />
           </div>
           <div>
@@ -145,17 +145,17 @@ export default function Inventario() {
             <p className="text-xs text-white/40">Control de stock y movimientos</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => { fetchAll(); fetchMovements() }}>
-            <RefreshCw size={15} />
-            Actualizar
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => { fetchAll(); fetchMovements() }} className="flex-1 sm:flex-none">
+            <RefreshCw size={14} />
+            <span className="hidden xs:inline">Actualizar</span>
           </Button>
-          <Button variant="secondary" onClick={openDrinkModal}>
-            <Droplets size={16} />
-            Recargar Refrescos
+          <Button variant="secondary" size="sm" onClick={openDrinkModal} className="flex-1 sm:flex-none">
+            <Droplets size={15} />
+            Refrescos
           </Button>
-          <Button variant="primary" onClick={() => { chickenForm.reset({ chickens: 1 }); setModalOpen(true) }}>
-            <Plus size={16} />
+          <Button variant="primary" size="sm" onClick={() => { chickenForm.reset({ chickens: 1 }); setModalOpen(true) }} className="w-full sm:w-auto">
+            <Plus size={15} />
             Compra de Pollos
           </Button>
         </div>
@@ -170,9 +170,9 @@ export default function Inventario() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Drumstick size={16} className="text-brand-400" />
-                <p className="text-sm font-semibold text-white/70 uppercase tracking-wide">Pollo</p>
+                <p className="text-xs sm:text-sm font-semibold text-white/70 uppercase tracking-wide">Pollo</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {chickenItems.map(item => <StockCard key={item.id} item={item} />)}
               </div>
             </div>
@@ -183,9 +183,9 @@ export default function Inventario() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Droplets size={16} className="text-blue-400" />
-                <p className="text-sm font-semibold text-white/70 uppercase tracking-wide">Refrescos</p>
+                <p className="text-xs sm:text-sm font-semibold text-white/70 uppercase tracking-wide">Refrescos</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {drinkItems.map(item => <StockCard key={item.id} item={item} />)}
               </div>
             </div>
@@ -195,8 +195,8 @@ export default function Inventario() {
 
       {/* Historial de movimientos */}
       <div className="card p-0 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-          <h2 className="font-semibold text-white">Historial de Movimientos</h2>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-white/8">
+          <h2 className="font-semibold text-white text-sm sm:text-base">Historial de Movimientos</h2>
           <span className="text-xs text-white/40">Ultimos 50</span>
         </div>
         {loadingMov ? (
@@ -207,49 +207,93 @@ export default function Inventario() {
             <p className="text-sm">Sin movimientos registrados</p>
           </div>
         ) : (
-          <table className="table-base">
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Articulo</th>
-                <th>Cambio</th>
-                <th>Notas</th>
-                <th>Realizado por</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Vista en móvil: Cards */}
+            <div className="block md:hidden divide-y divide-white/5">
               {movements.map(mov => {
                 const meta = MOVEMENT_LABELS[mov.movement_type] ?? MOVEMENT_LABELS.sale
                 const MovIcon = meta.icon
                 return (
-                  <tr key={mov.id}>
-                    <td>
-                      <Badge variant={meta.variant}>
-                        <MovIcon size={11} />
-                        {meta.label}
-                      </Badge>
-                    </td>
-                    <td className="text-white/80">{mov.inventory_items?.name}</td>
-                    <td>
-                      <span className={`font-bold ${mov.quantity_change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <div key={mov.id} className="p-4 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={meta.variant}>
+                          <MovIcon size={11} />
+                          {meta.label}
+                        </Badge>
+                        <span className="text-xs font-semibold text-white">
+                          {mov.inventory_items?.name}
+                        </span>
+                      </div>
+                      <span className={`font-black text-sm ${mov.quantity_change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {mov.quantity_change > 0 ? '+' : ''}{mov.quantity_change}
                       </span>
-                    </td>
-                    <td className="text-white/50 text-xs max-w-xs truncate">{mov.notes ?? '-'}</td>
-                    <td className="text-white/60 text-xs">
-                      {mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}
-                    </td>
-                    <td className="text-white/40 text-xs">
-                      {new Date(mov.created_at).toLocaleDateString('es-BO', {
-                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </td>
-                  </tr>
+                    </div>
+                    {mov.notes && (
+                      <p className="text-xs text-white/50 bg-white/5 px-2.5 py-1 rounded-lg">
+                        {mov.notes}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-[11px] text-white/40 pt-1">
+                      <span>{mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}</span>
+                      <span>
+                        {new Date(mov.created_at).toLocaleDateString('es-BO', {
+                          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
                 )
               })}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Vista Tablet/Desktop: Tabla */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Articulo</th>
+                    <th>Cambio</th>
+                    <th>Notas</th>
+                    <th>Realizado por</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.map(mov => {
+                    const meta = MOVEMENT_LABELS[mov.movement_type] ?? MOVEMENT_LABELS.sale
+                    const MovIcon = meta.icon
+                    return (
+                      <tr key={mov.id}>
+                        <td>
+                          <Badge variant={meta.variant}>
+                            <MovIcon size={11} />
+                            {meta.label}
+                          </Badge>
+                        </td>
+                        <td className="text-white/80 font-medium">{mov.inventory_items?.name}</td>
+                        <td>
+                          <span className={`font-bold ${mov.quantity_change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {mov.quantity_change > 0 ? '+' : ''}{mov.quantity_change}
+                          </span>
+                        </td>
+                        <td className="text-white/50 text-xs max-w-xs truncate">{mov.notes ?? '-'}</td>
+                        <td className="text-white/60 text-xs">
+                          {mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}
+                        </td>
+                        <td className="text-white/40 text-xs">
+                          {new Date(mov.created_at).toLocaleDateString('es-BO', {
+                            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -357,7 +401,7 @@ function StockCard({ item }) {
       </div>
       <div className="flex items-end justify-between">
         <div>
-          <p className={`text-4xl font-bold ${
+          <p className={`text-3xl sm:text-4xl font-bold ${
             status.variant === 'red' ? 'text-red-400' :
             status.variant === 'yellow' ? 'text-yellow-400' : 'text-emerald-400'
           }`}>

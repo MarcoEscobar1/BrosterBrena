@@ -17,7 +17,10 @@ const CATEGORIES = [
 
 export default function POS() {
   const { profile, isAdmin } = useAuth()
-  const { items, isAdminSale, addItem, clearCart } = useCartStore()
+  const {
+    items, isAdminSale, addItem, clearCart,
+    isCartOpen, setIsCartOpen
+  } = useCartStore()
 
   const [products,    setProducts]    = useState([])
   const [inventory,   setInventory]   = useState({})
@@ -25,7 +28,6 @@ export default function POS() {
   const [confirming,  setConfirming]  = useState(false)
   const [lastReceipt, setLastReceipt] = useState(null)
   const [showReceipt, setShowReceipt] = useState(false)
-  const [isCartOpen,  setIsCartOpen]  = useState(false)
 
   const loadData = useCallback(() => {
     const prods = db.getProducts(true) // solo activos
@@ -146,7 +148,7 @@ export default function POS() {
     <div className="flex h-full min-h-full w-full relative bg-surface-300">
       {/* Panel Central: Catalogo */}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        {/* Header del POS */}
+        {/* Header del POS en Desktop */}
         <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/8 bg-surface-200 shrink-0 shadow-sm relative z-10">
           <div>
             <h1 className="text-xl font-bold text-white tracking-wide">Punto de Venta</h1>
@@ -156,25 +158,41 @@ export default function POS() {
           </div>
         </div>
 
+        {/* Quick Category Tabs (útil en móvil y tablet) */}
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-200/90 backdrop-blur-md border-b border-white/8 overflow-x-auto no-scrollbar shrink-0 z-10">
+          <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider hidden sm:inline mr-1">
+            Categorías:
+          </span>
+          {CATEGORIES.map(cat => (
+            <a
+              key={cat.key}
+              href={`#cat-${cat.key}`}
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/5 hover:bg-white/10 active:bg-brand-500 active:text-white text-white/70 hover:text-white transition-all whitespace-nowrap border border-white/8"
+            >
+              {cat.label}
+            </a>
+          ))}
+        </div>
+
         {/* Grid de Productos */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-32 lg:pb-6">
           {products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-white/30">
+            <div className="flex flex-col items-center justify-center h-full text-white/30 py-16">
               <p className="text-4xl mb-3 opacity-50">😶</p>
               <p className="tracking-wide uppercase text-xs font-bold">No hay productos activos</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-8 max-w-7xl mx-auto">
+            <div className="flex flex-col gap-6 lg:gap-8 max-w-7xl mx-auto">
               {CATEGORIES.map(cat => {
                 const catProducts = products.filter(p => p.category === cat.key)
                 if (catProducts.length === 0) return null
 
                 return (
-                  <div key={cat.key}>
-                    <h2 className="text-lg font-bold text-white mb-4 border-b border-white/10 pb-2 inline-flex items-center gap-2 uppercase tracking-wide">
+                  <div key={cat.key} id={`cat-${cat.key}`} className="scroll-mt-14">
+                    <h2 className="text-base sm:text-lg font-bold text-white mb-3 lg:mb-4 border-b border-white/10 pb-2 inline-flex items-center gap-2 uppercase tracking-wide">
                       {cat.label}
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-4">
                       {catProducts.map(product => (
                         <ProductCard
                           key={product.id}
@@ -215,30 +233,28 @@ export default function POS() {
         />
       </div>
 
-      {/* Floating Cart Button (Mobile Only) */}
-      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-sm px-4 pointer-events-none">
-        <button
-          onClick={() => setIsCartOpen(true)}
-          className="w-full flex items-center justify-between gap-3 px-6 py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white shadow-brand transition-transform active:scale-95 pointer-events-auto"
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <CartIcon size={24} />
-              {cartTotalItems > 0 && (
-                <span className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-white text-brand-600 rounded-full text-xs font-bold">
+      {/* Floating Cart Pill (Mobile Only: solo cuando hay items agregados) */}
+      {cartTotalItems > 0 && (
+        <div className="lg:hidden fixed bottom-[4.25rem] left-0 right-0 z-30 px-4 pointer-events-none animate-slide-up">
+          <div className="max-w-md mx-auto pointer-events-auto">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white shadow-glow transition-all active:scale-[0.98] border border-brand-400/30"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-black/25 flex items-center justify-center font-black text-xs">
                   {cartTotalItems}
-                </span>
-              )}
-            </div>
-            <span className="font-bold tracking-wide">Ver Carrito</span>
+                </div>
+                <span className="font-bold tracking-wide text-xs sm:text-sm">Ver Carrito</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-black text-sm bg-black/25 px-3 py-1 rounded-xl border border-white/10">
+                <span>Bs {items.reduce((a, i) => a + i.subtotal, 0).toFixed(2)}</span>
+                <span className="text-white/70 text-xs">→</span>
+              </div>
+            </button>
           </div>
-          {cartTotalItems > 0 && (
-            <span className="font-bold bg-black/20 px-3 py-1 rounded-lg">
-              Bs {items.reduce((a, i) => a + i.subtotal, 0).toFixed(2)}
-            </span>
-          )}
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* Modal de Recibo */}
       <ReceiptModal
