@@ -54,8 +54,8 @@ export default {
         },
       },
       boxShadow: {
-        'brand': '0 0 24px rgba(227, 10, 23, 0.2)',
-        'glow':  '0 0 40px rgba(227, 10, 23, 0.35)',
+        'brand': '0 4px 12px rgba(0, 0, 0, 0.18)',
+        'glow':  '0 8px 24px rgba(0, 0, 0, 0.24)',
       },
     },
   },

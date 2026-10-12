@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
@@ -11,28 +10,19 @@ export default function VentaDetalle() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const [sale,    setSale]    = useState(null)
-  const [items,   setItems]   = useState([])
-  const [loading, setLoading] = useState(true)
-
+  const sale = db.getSaleById(id)
+  const items = db.getSaleItems(id)
+  const loading = false
   const handleBack = () => navigate(profile?.role === 'admin' ? '/admin/ventas' : '/empleado/ventas')
-
-  useEffect(() => {
-    const saleData  = db.getSaleById(id)
-    const itemsData = db.getSaleItems(id)
-    setSale(saleData)
-    setItems(itemsData)
-    setLoading(false)
-  }, [id])
 
   const handlePrint = () => window.print()
 
   if (loading) {
     return <div className="flex justify-center items-center h-full py-24"><Spinner size="lg" /></div>
   }
-  if (!sale) {
+  if (!sale || (profile?.role !== 'admin' && sale.employee_id !== profile?.id)) {
     return (
-      <div className="p-4 sm:p-6 text-center text-white/40">
+      <div className="p-4 sm:p-6 text-center text-white/60">
         <p>Venta no encontrada</p>
         <Button variant="secondary" className="mt-4" onClick={handleBack}>Volver</Button>
       </div>
@@ -47,8 +37,8 @@ export default function VentaDetalle() {
     <div className="p-4 sm:p-6 max-w-2xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3 sm:gap-4 mb-6">
-        <button onClick={handleBack}
-          className="p-2 -ml-2 rounded-xl hover:bg-white/8 text-white/40 hover:text-white transition-colors">
+        <button aria-label="Volver a ventas" onClick={handleBack}
+          className="p-2 -ml-2 rounded-xl hover:bg-white/8 text-white/60 hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1 min-w-0">
@@ -58,9 +48,9 @@ export default function VentaDetalle() {
               <Badge variant="orange"><AlertTriangle size={11} />Consumo Interno</Badge>
             )}
           </div>
-          <p className="text-xs text-white/40 mt-0.5">{dateStr}</p>
+          <p className="text-xs text-white/60 mt-0.5">{dateStr}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={handlePrint} className="shrink-0">
+        <Button variant="secondary" size="sm" onClick={handlePrint} aria-label="Imprimir recibo" className="shrink-0">
           <Printer size={15} />
           <span className="hidden xs:inline">Imprimir</span>
         </Button>
@@ -71,9 +61,9 @@ export default function VentaDetalle() {
         {/* Cabecera */}
         <div className="text-center border-b border-dashed border-white/15 pb-4 mb-4">
           <p className="text-lg font-bold text-white tracking-wider">BROASTERIA BRENA</p>
-          <p className="text-xs text-white/40 mt-1">Recibo N°: <span className="text-white font-semibold">{sale.receipt_number}</span></p>
-          <p className="text-xs text-white/40">Fecha: <span className="text-white">{dateStr}</span></p>
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-white/60 mt-1">Recibo N°: <span className="text-white font-semibold">{sale.receipt_number}</span></p>
+          <p className="text-xs text-white/60">Fecha: <span className="text-white">{dateStr}</span></p>
+          <p className="text-xs text-white/60">
             Atendido por: <span className="text-white">
               {sale.profiles ? `${sale.profiles.first_name} ${sale.profiles.last_name}` : '-'}
             </span>
@@ -113,7 +103,7 @@ export default function VentaDetalle() {
         </div>
 
         <div className="border-t border-dashed border-white/15 mt-3 pt-2 text-center">
-          <p className="text-xs text-white/30">Factura local · Sin impuestos</p>
+          <p className="text-xs text-white/60">Factura local · Sin impuestos</p>
         </div>
 
         {sale.is_admin_sale && (

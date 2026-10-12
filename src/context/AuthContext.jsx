@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
+import { useCartStore } from '../store/cartStore'
 import { db } from '../lib/mockDb'
 
 const AuthContext = createContext(null)
@@ -6,22 +7,12 @@ const AuthContext = createContext(null)
 const SESSION_KEY = 'brena_session_user_id'
 
 export function AuthProvider({ children }) {
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  // Restaurar sesion del localStorage
-  useEffect(() => {
+  const [profile, setProfile] = useState(() => {
     const savedId = localStorage.getItem(SESSION_KEY)
-    if (savedId) {
-      const saved = db.getProfileById(savedId)
-      if (saved && saved.is_active) {
-        setProfile(saved)
-      } else {
-        localStorage.removeItem(SESSION_KEY)
-      }
-    }
-    setLoading(false)
-  }, [])
+    const saved = savedId ? db.getProfileById(savedId) : null
+    return saved?.is_active ? saved : null
+  })
+  const loading = false
 
   const loginWithUsername = useCallback(async (username, password) => {
     const result = db.loginWithUsername(username, password)
@@ -36,6 +27,8 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     localStorage.removeItem(SESSION_KEY)
+    useCartStore.getState().clearCart()
+    useCartStore.getState().setIsCartOpen(false)
     setProfile(null)
   }, [])
 
@@ -67,6 +60,8 @@ export function AuthProvider({ children }) {
   )
 }
 
+/* Auth provider and its hook share a module intentionally. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider')

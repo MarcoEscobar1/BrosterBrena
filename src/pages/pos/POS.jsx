@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useDrawerFocus } from '../../hooks/useDrawerFocus'
+import { useState, useCallback } from 'react'
 import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
 import { useCartStore } from '../../store/cartStore'
-import { ShoppingCart as CartIcon } from 'lucide-react'
 import ProductCard from '../../components/pos/ProductCard'
 import Cart from '../../components/pos/Cart'
 import ReceiptModal from '../../components/pos/ReceiptModal'
@@ -22,24 +22,15 @@ export default function POS() {
     isCartOpen, setIsCartOpen
   } = useCartStore()
 
-  const [products,    setProducts]    = useState([])
-  const [inventory,   setInventory]   = useState({})
-  const [loading,     setLoading]     = useState(true)
+  const closeCart = useCallback(() => setIsCartOpen(false), [setIsCartOpen])
+  const cartRef = useDrawerFocus(isCartOpen, closeCart)
+
+  const [products]    = useState(() => db.getProducts(true))
+  const [inventory,   setInventory]   = useState(() => db.getInventoryMap())
+  const loading = false
   const [confirming,  setConfirming]  = useState(false)
   const [lastReceipt, setLastReceipt] = useState(null)
   const [showReceipt, setShowReceipt] = useState(false)
-
-  const loadData = useCallback(() => {
-    const prods = db.getProducts(true) // solo activos
-    const invMap = db.getInventoryMap()
-    setProducts(prods)
-    setInventory(invMap)
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    loadData()
-  }, [loadData])
 
   // Calcular stock disponible
   const getAvailableStock = (product) => {
@@ -127,7 +118,7 @@ export default function POS() {
 
       // Refrescar inventario
       setInventory(db.getInventoryMap())
-    } catch (err) {
+    } catch {
       toast.error('Error inesperado. Intenta de nuevo.')
     } finally {
       setConfirming(false)
@@ -145,9 +136,9 @@ export default function POS() {
   const cartTotalItems = items.reduce((acc, item) => acc + item.quantity, 0)
 
   return (
-    <div className="flex h-full min-h-full w-full relative bg-surface-300">
+    <div className="flex h-full min-h-0 w-full relative bg-surface-300">
       {/* Panel Central: Catalogo */}
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden min-w-0">
         {/* Header del POS en Desktop */}
         <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/8 bg-surface-200 shrink-0 shadow-sm relative z-10">
           <div>
@@ -160,7 +151,7 @@ export default function POS() {
 
         {/* Quick Category Tabs (útil en móvil y tablet) */}
         <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-200/90 backdrop-blur-md border-b border-white/8 overflow-x-auto no-scrollbar shrink-0 z-10">
-          <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider hidden sm:inline mr-1">
+          <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider hidden sm:inline mr-1">
             Categorías:
           </span>
           {CATEGORIES.map(cat => (
@@ -175,10 +166,9 @@ export default function POS() {
         </div>
 
         {/* Grid de Productos */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-32 lg:pb-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-32 lg:pb-6">
           {products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-white/30 py-16">
-              <p className="text-4xl mb-3 opacity-50">😶</p>
+            <div className="flex flex-col items-center justify-center h-full text-white/60 py-16">
               <p className="tracking-wide uppercase text-xs font-bold">No hay productos activos</p>
             </div>
           ) : (
@@ -192,7 +182,7 @@ export default function POS() {
                     <h2 className="text-base sm:text-lg font-bold text-white mb-3 lg:mb-4 border-b border-white/10 pb-2 inline-flex items-center gap-2 uppercase tracking-wide">
                       {cat.label}
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-4">
                       {catProducts.map(product => (
                         <ProductCard
                           key={product.id}
@@ -219,9 +209,9 @@ export default function POS() {
       )}
 
       {/* Panel Derecho: Carrito */}
-      <div className={`
+      <div ref={cartRef} tabIndex={-1} aria-label="Carrito" className={`
         fixed inset-y-0 right-0 z-50 transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0
-        ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}
+        ${isCartOpen ? 'translate-x-0 visible' : 'translate-x-full invisible lg:visible'}
         shadow-2xl lg:shadow-none h-full
       `}>
         <Cart
@@ -235,11 +225,11 @@ export default function POS() {
 
       {/* Floating Cart Pill (Mobile Only: solo cuando hay items agregados) */}
       {cartTotalItems > 0 && (
-        <div className="lg:hidden fixed bottom-[4.25rem] left-0 right-0 z-30 px-4 pointer-events-none animate-slide-up">
+        <div className="lg:hidden fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-30 px-4 pointer-events-none animate-slide-up">
           <div className="max-w-md mx-auto pointer-events-auto">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white shadow-glow transition-all active:scale-[0.98] border border-brand-400/30"
+              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white shadow-lg transition-all active:scale-[0.98] border border-brand-400/30"
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-xl bg-black/25 flex items-center justify-center font-black text-xs">

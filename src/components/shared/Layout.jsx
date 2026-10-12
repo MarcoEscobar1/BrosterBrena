@@ -1,11 +1,12 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useDrawerFocus } from '../../hooks/useDrawerFocus'
+import { useState, useCallback } from 'react'
 import Sidebar from './Sidebar'
 import { useAuth } from '../../context/AuthContext'
 import { useCartStore } from '../../store/cartStore'
 import {
   Menu, LayoutDashboard, ShoppingCart, Receipt,
-  Warehouse, LogOut, X
+  Warehouse, LogOut
 } from 'lucide-react'
 
 const ADMIN_BOTTOM = [
@@ -28,6 +29,8 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
+  const sidebarRef = useDrawerFocus(isSidebarOpen, closeSidebar)
   const bottomItems = isAdmin ? ADMIN_BOTTOM : EMP_BOTTOM
   const isPos = location.pathname === '/pos'
   const totalCartCount = items.reduce((acc, i) => acc + i.quantity, 0)
@@ -49,21 +52,23 @@ export default function Layout() {
       )}
 
       {/* ── Sidebar (oculto en móvil, visible en lg) ─────────── */}
-      <div className={`
+      <div ref={sidebarRef} tabIndex={-1} aria-label="Menú principal" className={`
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
-        lg:static lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        h-full lg:static lg:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0 visible' : '-translate-x-full invisible lg:visible'}
       `}>
         <Sidebar onClose={() => setIsSidebarOpen(false)} />
       </div>
 
       {/* ── Contenido Principal ───────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
 
         {/* Header móvil */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/8 bg-surface-200 shrink-0 pt-safe">
           <div className="flex items-center gap-3">
             <button
+              aria-label="Abrir menú"
+              aria-expanded={isSidebarOpen}
               onClick={() => setIsSidebarOpen(true)}
               className="p-2 -ml-1 text-white/70 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
             >
@@ -98,7 +103,7 @@ export default function Layout() {
             )}
             <button
               onClick={handleLogout}
-              className="p-2 text-white/40 hover:text-red-400 rounded-xl hover:bg-red-500/10 transition-colors"
+              className="p-2 text-white/60 hover:text-red-400 rounded-xl hover:bg-red-500/10 transition-colors"
               title="Cerrar sesión"
             >
               <LogOut size={18} />
@@ -107,7 +112,7 @@ export default function Layout() {
         </div>
 
         {/* Contenido scrollable con espacio para bottom nav en móvil */}
-        <div className={`flex-1 ${isPos ? 'overflow-hidden' : 'overflow-y-auto'} pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0`}>
+        <div className={`flex-1 min-h-0 ${isPos ? 'overflow-hidden' : 'overflow-y-auto'} pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0`}>
           <Outlet />
         </div>
       </main>

@@ -1,27 +1,18 @@
-import { useState, useEffect } from 'react'
 import { db } from '../../lib/mockDb'
 import Spinner from '../../components/ui/Spinner'
 import Badge from '../../components/ui/Badge'
 import { Warehouse, AlertTriangle, CheckCircle } from 'lucide-react'
 
 export default function InventarioEmpleado() {
-  const [items,   setItems]   = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setItems(db.getInventory())
-    setLoading(false)
-  }, [])
+  const items = db.getInventory()
+  const loading = false
 
   return (
     <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
-          <Warehouse size={20} className="text-brand-400" />
-        </div>
         <div>
           <h1 className="text-xl font-bold text-white">Inventario</h1>
-          <p className="text-xs text-white/40">Stock actual — Solo lectura</p>
+          <p className="text-xs text-white/60">Stock actual — Solo lectura</p>
         </div>
       </div>
 
@@ -30,7 +21,6 @@ export default function InventarioEmpleado() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {items.map(item => {
-            const ok    = item.quantity > item.min_stock
             const low   = item.quantity <= item.min_stock && item.quantity > 0
             const empty = item.quantity === 0
 
@@ -54,7 +44,7 @@ export default function InventarioEmpleado() {
                 <p className={`text-3xl sm:text-4xl font-bold ${empty ? 'text-red-400' : low ? 'text-yellow-400' : 'text-emerald-400'}`}>
                   {Math.floor(item.quantity)}
                 </p>
-                <p className="text-xs text-white/30 mt-1">
+                <p className="text-xs text-white/60 mt-1">
                   {item.unit}s · Minimo: {item.min_stock}
                 </p>
               </div>

@@ -1,3 +1,5 @@
+import { localDate } from './dates.js'
+
 /**
  * mockDb.js — Base de datos local (reemplaza Supabase)
  * Persiste en localStorage. Todos los datos son ficticios para demo.
@@ -14,7 +16,7 @@ function uuidv4() {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const save = (key, data) => {
-  try { localStorage.setItem('brena_' + key, JSON.stringify(data)) } catch {}
+  try { localStorage.setItem('brena_' + key, JSON.stringify(data)) } catch { /* Local storage may be unavailable; keep the current in-memory session. */ }
 }
 const load = (key, fallback) => {
   try {
@@ -86,7 +88,7 @@ const SEED_SUPPLIERS = [
   { id: 'sup-002', first_name: 'Rosa', last_name: 'Quispe', phone: '77711002', description: 'Distribuidora de bebidas', is_active: true, created_at: new Date('2024-01-05').toISOString() },
 ]
 
-function generateSeedSales(profiles, products) {
+function generateSeedSales(products) {
   const sales = []
   const saleItems = []
   const now = new Date()
@@ -155,7 +157,7 @@ let _sales     = []
 let _saleItems = []
 
 if (!load('sales_seeded', false)) {
-  const seeded = generateSeedSales(SEED_PRODUCTS, SEED_PRODUCTS)
+  const seeded = generateSeedSales(SEED_PRODUCTS)
   _sales     = seeded.sales
   _saleItems = seeded.saleItems
   save('sales_seeded', true)
@@ -388,9 +390,9 @@ export const db = {
   // ── Sales ─────────────────────────────────────────────────
   createSale({ employee_id, is_admin_sale, items }) {
     const chickenInv = _inventory.find(i => i.slug === 'chicken_pieces')
-    const totalPieces = items.reduce((a, i) => a + (i.chicken_pieces ?? 0), 0)
+    const totalPieces = items.reduce((a, i) => a + (i.chicken_pieces ?? 0) * i.quantity, 0)
 
-    if (chickenInv && totalPieces > 0 && !is_admin_sale) {
+    if (chickenInv && totalPieces > 0) {
       if (totalPieces > chickenInv.quantity) {
         return { error: 'Stock insuficiente. Solo quedan ' + Math.floor(chickenInv.quantity) + ' presas.' }
       }
@@ -440,7 +442,7 @@ export const db = {
     }
 
     persist()
-    return { data: { receipt_number: receiptNumber, sale_id: saleId, total } }
+    return { data: { receipt_number: receiptNumber, sale_id: saleId, total, created_at: sale.created_at } }
   },
 
   getSales({ from, to, search, filterType, page, pageSize } = {}) {
@@ -516,8 +518,8 @@ export const db = {
         })(),
       }))
 
-    const today = new Date().toISOString().split('T')[0]
-    const todaySales = _sales.filter(s => s.created_at.startsWith(today))
+    const today = localDate()
+    const todaySales = _sales.filter(s => localDate(new Date(s.created_at)) === today)
     const byEmployeeMap = {}
 
     todaySales.forEach(s => {

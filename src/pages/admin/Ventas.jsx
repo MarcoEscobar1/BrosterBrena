@@ -1,19 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../../lib/mockDb'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
-import toast from 'react-hot-toast'
 import { Receipt, Search, Eye, AlertTriangle, SlidersHorizontal, X } from 'lucide-react'
 
 const PAGE_SIZE = 20
 
 export default function Ventas() {
   const navigate = useNavigate()
-  const [sales,      setSales]      = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [total,      setTotal]      = useState(0)
+  const loading = false
   const [page,       setPage]       = useState(0)
   const [showFilter, setShowFilter] = useState(false)
 
@@ -22,27 +19,14 @@ export default function Ventas() {
   const [dateFrom,   setDateFrom]   = useState('')
   const [dateTo,     setDateTo]     = useState('')
 
-  const fetchSales = useCallback(() => {
-    setLoading(true)
-    try {
-      const result = db.getSales({
-        from:       dateFrom || undefined,
-        to:         dateTo ? dateTo + 'T23:59:59' : undefined,
-        search:     search || undefined,
-        filterType: filterType !== 'all' ? filterType : undefined,
-        page,
-        pageSize: PAGE_SIZE,
-      })
-      setSales(result.data)
-      setTotal(result.total)
-    } catch {
-      toast.error('Error cargando ventas')
-    } finally {
-      setLoading(false)
-    }
-  }, [page, search, filterType, dateFrom, dateTo])
-
-  useEffect(() => { fetchSales() }, [fetchSales])
+  const { data: sales, total } = useMemo(() => db.getSales({
+    from: dateFrom ? dateFrom + 'T00:00:00' : undefined,
+    to: dateTo ? dateTo + 'T23:59:59.999' : undefined,
+    search: search || undefined,
+    filterType: filterType !== 'all' ? filterType : undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  }), [page, search, filterType, dateFrom, dateTo])
 
   const totalPages     = Math.ceil(total / PAGE_SIZE)
   const hasActiveFilter = search || filterType !== 'all' || dateFrom || dateTo
@@ -59,12 +43,9 @@ export default function Ventas() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <div className="page-header-icon">
-            <Receipt size={20} className="text-brand-400" />
-          </div>
           <div>
             <h1 className="text-lg md:text-xl font-bold text-white">Ventas</h1>
-            <p className="text-xs text-white/40">{total} registradas</p>
+            <p className="text-xs text-white/60">{total} registradas</p>
           </div>
         </div>
         <button
@@ -87,7 +68,7 @@ export default function Ventas() {
       {showFilter && (
         <div className="card flex flex-col gap-3 animate-slide-up">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
             <input
               placeholder="Buscar N° recibo..."
               value={search}
@@ -108,12 +89,12 @@ export default function Ventas() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-white/40 mb-1 block">Desde</label>
+              <label className="text-xs text-white/60 mb-1 block">Desde</label>
               <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0) }}
                 className="input-base" style={{ colorScheme: 'dark' }} />
             </div>
             <div>
-              <label className="text-xs text-white/40 mb-1 block">Hasta</label>
+              <label className="text-xs text-white/60 mb-1 block">Hasta</label>
               <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0) }}
                 className="input-base" style={{ colorScheme: 'dark' }} />
             </div>
@@ -125,12 +106,12 @@ export default function Ventas() {
       {sales.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
           <div className="card py-3 px-3 flex items-center gap-2">
-            <span className="text-xs text-white/40 leading-tight">Ventas normales</span>
+            <span className="text-xs text-white/60 leading-tight">Ventas normales</span>
             <span className="font-bold text-white ml-auto">Bs {pageNormalTotal.toFixed(2)}</span>
           </div>
           <div className="card py-3 px-3 flex items-center gap-2">
             <AlertTriangle size={13} className="text-brand-400 shrink-0" />
-            <span className="text-xs text-white/40 leading-tight">Interno</span>
+            <span className="text-xs text-white/60 leading-tight">Interno</span>
             <span className="font-bold text-brand-400 ml-auto">Bs {pageAdminTotal.toFixed(2)}</span>
           </div>
         </div>
@@ -140,8 +121,7 @@ export default function Ventas() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : sales.length === 0 ? (
-        <div className="card text-center py-16 text-white/30">
-          <Receipt size={40} strokeWidth={1} className="mx-auto mb-3" />
+        <div className="card text-center py-16 text-white/60">
           <p>No se encontraron ventas</p>
         </div>
       ) : (
@@ -151,7 +131,7 @@ export default function Ventas() {
             {sales.map(sale => (
               <div
                 key={sale.id}
-                className={`card flex items-center gap-3 py-3 ${sale.is_admin_sale ? 'border-l-2 border-brand-500 bg-brand-500/5' : ''}`}
+                className={`card flex items-center gap-3 py-3 ${sale.is_admin_sale ? 'border-l border-brand-500 bg-brand-500/5' : ''}`}
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs text-white/70">{sale.receipt_number}</p>
@@ -237,7 +217,7 @@ export default function Ventas() {
       {/* Paginacion */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-white/60">
             {page + 1} / {totalPages} · {total} ventas
           </p>
           <div className="flex gap-2">

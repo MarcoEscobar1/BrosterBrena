@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 const adminNavItems = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { to: '/pos', label: 'POS', icon: ShoppingCart },
   { to: '/admin/ventas', label: 'Ventas', icon: Receipt },
   { to: '/admin/productos', label: 'Productos', icon: Package },
@@ -48,12 +48,12 @@ export default function Sidebar({ onClose }) {
 
   return (
     <aside className="
-      flex flex-col w-64 min-h-screen
+      flex flex-col w-64 h-full min-h-0
       bg-surface-100 border-r border-white/8
       shrink-0
     ">
       {/* Logo / Branding */}
-      <div className="flex items-center justify-between px-5 py-5 border-b border-white/8 relative">
+      <div className="flex items-center justify-between shrink-0 px-5 py-5 border-b border-white/8 relative">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center overflow-hidden shrink-0 shadow-brand">
             <img src="/Logo.jpg" alt="Brena" className="w-full h-full object-cover" onError={(e) => {
@@ -69,8 +69,9 @@ export default function Sidebar({ onClose }) {
         {/* Botón cerrar (solo móvil) */}
         {onClose && (
           <button
+            aria-label="Cerrar menú"
             onClick={onClose}
-            className="lg:hidden p-1.5 text-white/40 hover:text-white rounded-lg hover:bg-white/10"
+            className="lg:hidden p-1.5 text-white/60 hover:text-white rounded-lg hover:bg-white/10"
           >
             <X size={20} />
           </button>
@@ -78,8 +79,8 @@ export default function Sidebar({ onClose }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-6 overflow-y-auto">
-        <p className="px-3 mb-3 text-[10px] font-bold uppercase tracking-widest text-white/30">Menú Principal</p>
+      <nav className="flex-1 min-h-0 px-3 py-6 overflow-y-auto">
+        <p className="px-3 mb-3 text-[10px] font-bold uppercase tracking-widest text-white/60">Menú Principal</p>
         <ul className="flex flex-col gap-1">
           {navItems.map(({ to, label, icon: Icon }) => (
             <li key={to}>
@@ -101,7 +102,7 @@ export default function Sidebar({ onClose }) {
       </nav>
 
       {/* User info + Logout */}
-      <div className="px-3 py-4 border-t border-white/8 bg-surface-200/50">
+      <div className="shrink-0 px-3 py-4 border-t border-white/8 bg-surface-200/50">
         <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl bg-black/20 border border-white/5">
           <div className="w-9 h-9 rounded-full bg-brand-500/20 border border-brand-500/30 flex items-center justify-center shrink-0">
             <span className="text-sm font-bold text-brand-500">

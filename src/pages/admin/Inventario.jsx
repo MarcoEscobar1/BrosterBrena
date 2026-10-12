@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { db } from '../../lib/mockDb'
@@ -42,17 +42,17 @@ const MOVEMENT_LABELS = {
 
 export default function Inventario() {
   const { profile } = useAuth()
-  const [items,      setItems]      = useState([])
-  const [movements,  setMovements]  = useState([])
-  const [suppliers,  setSuppliers]  = useState([])
-  const [loading,    setLoading]    = useState(true)
+  const [items,      setItems]      = useState(() => db.getInventory())
+  const [movements,  setMovements]  = useState(() => db.getMovements(50))
+  const [suppliers,  setSuppliers]  = useState(() => db.getActiveSuppliers())
+  const [loading,    setLoading]    = useState(false)
   const [loadingMov, setLoadingMov] = useState(true)
   const [modalOpen,  setModalOpen]  = useState(false)
   const [drinkModal, setDrinkModal] = useState(false)
   const [saving,     setSaving]     = useState(false)
 
   const chickenForm = useForm({ resolver: zodResolver(purchaseSchema) })
-  const watchChickens = chickenForm.watch('chickens', 0)
+  const watchChickens = useWatch({ control: chickenForm.control, name: 'chickens', defaultValue: 0 })
   const drinkForm = useForm({ resolver: zodResolver(drinkAdjustSchema) })
 
   const chickenItems = items.filter(i => i.slug === 'chicken_pieces')
@@ -71,7 +71,6 @@ export default function Inventario() {
     setLoadingMov(false)
   }
 
-  useEffect(() => { fetchAll(); fetchMovements() }, [])
 
   // Compra de pollos
   const onChickenSubmit = async ({ supplier_id, chickens, notes }) => {
@@ -137,12 +136,9 @@ export default function Inventario() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
-            <Warehouse size={20} className="text-brand-400" />
-          </div>
           <div>
             <h1 className="text-xl font-bold text-white">Inventario</h1>
-            <p className="text-xs text-white/40">Control de stock y movimientos</p>
+            <p className="text-xs text-white/60">Control de stock y movimientos</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -197,12 +193,12 @@ export default function Inventario() {
       <div className="card p-0 overflow-hidden">
         <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-white/8">
           <h2 className="font-semibold text-white text-sm sm:text-base">Historial de Movimientos</h2>
-          <span className="text-xs text-white/40">Ultimos 50</span>
+          <span className="text-xs text-white/60">Ultimos 50</span>
         </div>
         {loadingMov ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : movements.length === 0 ? (
-          <div className="text-center py-12 text-white/30">
+          <div className="text-center py-12 text-white/60">
             <Clock size={32} strokeWidth={1} className="mx-auto mb-2" />
             <p className="text-sm">Sin movimientos registrados</p>
           </div>
@@ -234,7 +230,7 @@ export default function Inventario() {
                         {mov.notes}
                       </p>
                     )}
-                    <div className="flex items-center justify-between text-[11px] text-white/40 pt-1">
+                    <div className="flex items-center justify-between text-[11px] text-white/60 pt-1">
                       <span>{mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}</span>
                       <span>
                         {new Date(mov.created_at).toLocaleDateString('es-BO', {
@@ -282,7 +278,7 @@ export default function Inventario() {
                         <td className="text-white/60 text-xs">
                           {mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}
                         </td>
-                        <td className="text-white/40 text-xs">
+                        <td className="text-white/60 text-xs">
                           {new Date(mov.created_at).toLocaleDateString('es-BO', {
                             day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                           })}
@@ -327,7 +323,7 @@ export default function Inventario() {
               <TrendingUp size={18} className="text-emerald-400 shrink-0" />
               <div>
                 <p className="text-sm text-emerald-400 font-semibold">+{watchChickens * 10} presas se agregaran al inventario</p>
-                <p className="text-xs text-white/40">{watchChickens} pollos x 10 presas/pollo</p>
+                <p className="text-xs text-white/60">{watchChickens} pollos x 10 presas/pollo</p>
               </div>
             </div>
           )}
@@ -391,7 +387,7 @@ function StockCard({ item }) {
     }`}>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-xs text-white/40 uppercase tracking-wide font-medium">{item.unit}</p>
+          <p className="text-xs text-white/60 uppercase tracking-wide font-medium">{item.unit}</p>
           <p className="text-base font-semibold text-white mt-0.5">{item.name}</p>
         </div>
         <Badge variant={status.variant}>
@@ -407,7 +403,7 @@ function StockCard({ item }) {
           }`}>
             {Math.floor(item.quantity)}
           </p>
-          <p className="text-xs text-white/30 mt-0.5">Minimo: {item.min_stock} {item.unit}s</p>
+          <p className="text-xs text-white/60 mt-0.5">Minimo: {item.min_stock} {item.unit}s</p>
         </div>
         {status.variant !== 'green' && (
           <AlertTriangle size={20} className={

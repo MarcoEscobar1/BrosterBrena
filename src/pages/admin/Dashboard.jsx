@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react'
+import { localDate } from '../../lib/dates'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../../lib/mockDb'
 import Spinner from '../../components/ui/Spinner'
 import Badge from '../../components/ui/Badge'
 import {
-  LayoutDashboard, TrendingUp, ShoppingCart, Users,
-  Warehouse, AlertTriangle, Eye, RefreshCw
+  AlertTriangle, Eye, RefreshCw
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from 'recharts'
-import toast from 'react-hot-toast'
 
 const PERIODS = [
   { key: 'today',  label: 'Hoy' },
@@ -22,8 +21,8 @@ const PERIODS = [
 function getDateRange(period) {
   const now = new Date()
   if (period === 'today') {
-    const d = now.toISOString().split('T')[0]
-    return { from: d + 'T00:00:00', to: d + 'T23:59:59' }
+    const d = localDate(now)
+    return { from: d + 'T00:00:00', to: d + 'T23:59:59.999' }
   }
   if (period === 'week') {
     const dayOfWeek = now.getDay()
@@ -44,23 +43,13 @@ function getDateRange(period) {
   }
 }
 
-function MetricCard({ icon: Icon, label, value, sub, color = 'brand' }) {
-  const colors = {
-    brand:  'text-brand-400 bg-brand-500/15 border-brand-500/30',
-    green:  'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
-    yellow: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30',
-    red:    'text-red-400 bg-red-500/15 border-red-500/30',
-  }
+function MetricCard({ label, value, sub, color = 'brand' }) {
+  const colors = { brand: 'text-white', green: 'text-emerald-400', yellow: 'text-yellow-400', red: 'text-red-400' }
   return (
-    <div className="card flex items-center gap-3">
-      <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${colors[color]}`}>
-        <Icon size={20} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-white/40 uppercase tracking-wide font-medium leading-tight">{label}</p>
-        <p className="text-xl font-bold text-white mt-0.5 truncate">{value}</p>
-        {sub && <p className="text-xs text-white/40 mt-0.5 leading-tight">{sub}</p>}
-      </div>
+    <div className="card">
+      <p className="text-sm text-white/70">{label}</p>
+      <p className={`text-xl sm:text-2xl font-semibold mt-1 tabular-nums break-words ${colors[color]}`}>{value}</p>
+      {sub && <p className="text-xs text-white/60 mt-1">{sub}</p>}
     </div>
   )
 }
@@ -68,14 +57,11 @@ function MetricCard({ icon: Icon, label, value, sub, color = 'brand' }) {
 export default function Dashboard() {
   const navigate  = useNavigate()
   const [period,  setPeriod]  = useState('today')
-  const [loading, setLoading] = useState(true)
-  const [data,    setData]    = useState({
-    income: 0, transactions: 0, byEmployee: [],
-    chartData: [], stock: [], lastSales: [],
-  })
-
-  const fetchDashboard = () => {
-    setLoading(true)
+  const [refresh, setRefresh] = useState(0)
+  const loading = false
+  const fetchDashboard = () => setRefresh(value => value + 1)
+  const data = useMemo(() => {
+    void refresh
     try {
       const { from, to } = getDateRange(period)
       const { sales, byEmployee, inventory } = db.getDashboardData({ from, to })
@@ -95,15 +81,11 @@ export default function Dashboard() {
         else                 grouped[key].normal += Number(s.total_amount)
       })
 
-      setData({ income, transactions, byEmployee, chartData: Object.values(grouped), stock: inventory, lastSales })
+      return { income, transactions, byEmployee, chartData: Object.values(grouped), stock: inventory, lastSales }
     } catch {
-      toast.error('Error cargando dashboard')
-    } finally {
-      setLoading(false)
+      return { income: 0, transactions: 0, byEmployee: [], chartData: [], stock: [], lastSales: [] }
     }
-  }
-
-  useEffect(() => { fetchDashboard() }, [period])
+  }, [period, refresh])
 
   const stockItem   = data.stock.find(s => s.slug === 'chicken_pieces')
   const stockStatus = stockItem
@@ -113,14 +95,11 @@ export default function Dashboard() {
   return (
     <div className="p-4 md:p-6 flex flex-col gap-4 md:gap-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="page-header-icon">
-            <LayoutDashboard size={20} className="text-brand-400" />
-          </div>
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-white">Dashboard</h1>
-            <p className="text-xs text-white/40 hidden sm:block">Metricas del negocio</p>
+            <h1 className="text-lg md:text-xl font-bold text-white">Inicio</h1>
+            <p className="text-xs text-white/60 hidden sm:block">Métricas del negocio</p>
           </div>
         </div>
         <div className="flex gap-1.5 items-center">
@@ -142,7 +121,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={fetchDashboard}
-            className="p-2 rounded-xl hover:bg-white/8 text-white/40 hover:text-white transition-colors"
+            className="p-2 rounded-xl hover:bg-white/8 text-white/60 hover:text-white transition-colors"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -156,21 +135,21 @@ export default function Dashboard() {
           {/* Metricas: 2 col en móvil, 4 en xl */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <MetricCard
-              icon={TrendingUp} label="Ingresos" color="green"
+              label="Ingresos" color="green"
               value={`Bs ${data.income.toFixed(2)}`}
               sub="Ventas normales"
             />
             <MetricCard
-              icon={ShoppingCart} label="Transacciones" color="brand"
+              label="Transacciones" color="brand"
               value={data.transactions}
               sub="Ventas del periodo"
             />
             <MetricCard
-              icon={Users} label="Empleados" color="brand"
+              label="Empleados" color="brand"
               value={data.byEmployee.length}
             />
             <MetricCard
-              icon={Warehouse} label="Presas" color={stockStatus}
+              label="Presas" color={stockStatus}
               value={stockItem ? Math.floor(stockItem.quantity) : '-'}
               sub={stockItem ? `Min: ${stockItem.min_stock}` : 'Sin datos'}
             />
@@ -182,7 +161,7 @@ export default function Dashboard() {
             <div className="card xl:col-span-2">
               <p className="font-semibold text-white mb-3 text-sm">Ventas por periodo</p>
               {data.chartData.length === 0 ? (
-                <div className="flex items-center justify-center h-40 text-white/30">
+                <div className="flex items-center justify-center h-40 text-white/60">
                   <p className="text-sm">Sin datos para este periodo</p>
                 </div>
               ) : (
@@ -200,8 +179,8 @@ export default function Dashboard() {
                     <Legend
                       formatter={v => <span style={{ fontSize: 11 }}>{v === 'normal' ? 'Ventas normales' : 'Consumo interno'}</span>}
                     />
-                    <Bar dataKey="normal" fill="#f97316" radius={[4,4,0,0]} />
-                    <Bar dataKey="admin"  fill="rgba(249,115,22,0.3)" radius={[4,4,0,0]} />
+                    <Bar dataKey="normal" fill="#e30a17" radius={[4,4,0,0]} />
+                    <Bar dataKey="admin"  fill="#ff6b6b" radius={[4,4,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -211,7 +190,7 @@ export default function Dashboard() {
             <div className="card flex flex-col gap-3">
               <p className="font-semibold text-white text-sm">Hoy por empleado</p>
               {data.byEmployee.length === 0 ? (
-                <p className="text-white/30 text-sm">Sin ventas hoy</p>
+                <p className="text-white/60 text-sm">Sin ventas hoy</p>
               ) : (
                 data.byEmployee
                   .filter(e => e.total_transactions > 0)
@@ -219,7 +198,7 @@ export default function Dashboard() {
                     <div key={e.employee_id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                       <div className="min-w-0 mr-2">
                         <p className="text-sm font-medium text-white truncate">{e.employee_name}</p>
-                        <p className="text-xs text-white/40">{e.total_transactions} ventas</p>
+                        <p className="text-xs text-white/60">{e.total_transactions} ventas</p>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-emerald-400">Bs {Number(e.real_income).toFixed(2)}</p>
@@ -250,7 +229,7 @@ export default function Dashboard() {
               {data.lastSales.map(sale => (
                 <div
                   key={sale.id}
-                  className={`flex items-center justify-between px-4 py-3 ${sale.is_admin_sale ? 'bg-brand-500/5 border-l-2 border-brand-500' : ''}`}
+                  className={`flex items-center justify-between px-4 py-3 ${sale.is_admin_sale ? 'bg-brand-500/5 border-l border-brand-500' : ''}`}
                 >
                   <div className="min-w-0 mr-3">
                     <p className="font-mono text-xs text-white/70 truncate">{sale.receipt_number}</p>
@@ -300,7 +279,7 @@ export default function Dashboard() {
                         <div className="flex justify-end">
                           <button
                             onClick={() => navigate(`/admin/ventas/${sale.id}`)}
-                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/40 hover:text-white transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/60 hover:text-white transition-colors"
                           >
                             <Eye size={14} />
                           </button>

@@ -1,7 +1,8 @@
 import { useRef } from 'react'
-import { Printer, X, AlertTriangle } from 'lucide-react'
+import { Printer, AlertTriangle } from 'lucide-react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
+import toast from 'react-hot-toast'
 
 /**
  * ReceiptModal — muestra el recibo después de una venta exitosa.
@@ -12,7 +13,7 @@ export default function ReceiptModal({ open, receipt, onClose }) {
 
   if (!receipt) return null
 
-  const now = new Date()
+  const now = new Date(receipt.created_at)
   const dateStr = now.toLocaleDateString('es-BO', {
     day: '2-digit', month: '2-digit', year: 'numeric'
   })
@@ -25,11 +26,13 @@ export default function ReceiptModal({ open, receipt, onClose }) {
     if (!content) return
 
     const win = window.open('', '_blank', 'width=400,height=600')
+    if (!win) { toast.error('Permite las ventanas emergentes para imprimir el recibo.'); return }
     win.document.write(`
       <html>
         <head>
           <title>Recibo ${receipt.receipt_number}</title>
           <style>
+            body * { color: #000 !important; background: transparent !important; }
             body { font-family: monospace; font-size: 12px; margin: 20px; color: #000; }
             .center { text-align: center; }
             .divider { border-top: 1px dashed #000; margin: 8px 0; }
@@ -46,8 +49,9 @@ export default function ReceiptModal({ open, receipt, onClose }) {
       </html>
     `)
     win.document.close()
+    win.onafterprint = () => win.close()
+    win.focus()
     win.print()
-    win.close()
   }
 
   return (
@@ -101,7 +105,7 @@ export default function ReceiptModal({ open, receipt, onClose }) {
         </div>
 
         <div className="border-t border-dashed border-white/20 mt-3 pt-2">
-          <p className="text-center text-xs text-white/30">Factura local · Sin impuestos</p>
+          <p className="text-center text-xs text-white/60">Factura local · Sin impuestos</p>
         </div>
 
         {/* Leyenda venta admin */}

@@ -1,3 +1,4 @@
+import { localDate } from '../../lib/dates'
 import { useState } from 'react'
 import { db } from '../../lib/mockDb'
 import { useAuth } from '../../context/AuthContext'
@@ -17,7 +18,7 @@ const REPORT_TYPES = [
 export default function Reportes() {
   const { profile } = useAuth()
   const [reportType, setReportType] = useState('daily')
-  const [dateValue,  setDateValue]  = useState(new Date().toISOString().split('T')[0])
+  const [dateValue,  setDateValue]  = useState(localDate())
   const [loading,    setLoading]    = useState(false)
   const [preview,    setPreview]    = useState(null)
 
@@ -25,8 +26,8 @@ export default function Reportes() {
     const d = new Date(dateValue + 'T00:00:00')
     if (reportType === 'daily') {
       return {
-        from:  d.toISOString().split('T')[0] + 'T00:00:00',
-        to:    d.toISOString().split('T')[0] + 'T23:59:59',
+        from:  localDate(d) + 'T00:00:00',
+        to:    localDate(d) + 'T23:59:59.999',
         label: 'Dia: ' + d.toLocaleDateString('es-BO', { day: '2-digit', month: 'long', year: 'numeric' }),
       }
     }
@@ -37,8 +38,8 @@ export default function Reportes() {
       const sunday = new Date(monday)
       sunday.setDate(monday.getDate() + 6)
       return {
-        from:  monday.toISOString().split('T')[0] + 'T00:00:00',
-        to:    sunday.toISOString().split('T')[0] + 'T23:59:59',
+        from:  localDate(monday) + 'T00:00:00',
+        to:    localDate(sunday) + 'T23:59:59.999',
         label: 'Semana: ' + monday.toLocaleDateString('es-BO') + ' - ' + sunday.toLocaleDateString('es-BO'),
       }
     }
@@ -48,14 +49,18 @@ export default function Reportes() {
       const first = new Date(year, month, 1)
       const last  = new Date(year, month + 1, 0)
       return {
-        from:  first.toISOString().split('T')[0] + 'T00:00:00',
-        to:    last.toISOString().split('T')[0]  + 'T23:59:59',
+        from:  localDate(first) + 'T00:00:00',
+        to:    localDate(last)  + 'T23:59:59.999',
         label: d.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' }),
       }
     }
   }
 
   const fetchData = () => {
+    if (!dateValue || Number.isNaN(new Date(dateValue + 'T00:00:00').getTime())) {
+      toast.error('Selecciona una fecha válida para generar el reporte.')
+      return
+    }
     setLoading(true)
     try {
       const { from, to, label } = getDateRange()
@@ -67,7 +72,7 @@ export default function Reportes() {
       const adminTotal   = adminSales.reduce( (a, s) => a + Number(s.total_amount), 0)
 
       setPreview({ data, label, normalTotal, adminTotal, from, to })
-    } catch (err) {
+    } catch {
       toast.error('Error al cargar reporte')
     } finally {
       setLoading(false)
@@ -134,25 +139,23 @@ export default function Reportes() {
     <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
-          <BarChart3 size={20} className="text-brand-400" />
-        </div>
         <div>
           <h1 className="text-xl font-bold text-white">Reportes</h1>
-          <p className="text-xs text-white/40">Generacion y exportacion de PDFs</p>
+          <p className="text-xs text-white/60">Generacion y exportacion de PDFs</p>
         </div>
       </div>
 
       {/* Controles */}
       <div className="card flex flex-col sm:flex-row flex-wrap sm:items-end gap-4">
         {/* Tipo de reporte */}
-        <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
-          <p className="text-xs text-white/40 uppercase tracking-wide font-medium">Tipo de Reporte</p>
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          <p className="text-xs text-white/60 uppercase tracking-wide font-medium">Tipo de Reporte</p>
           <div className="flex flex-wrap gap-2">
             {REPORT_TYPES.map(rt => (
               <button
                 key={rt.key}
-                onClick={() => setReportType(rt.key)}
+                aria-pressed={reportType === rt.key}
+                onClick={() => { setReportType(rt.key); setPreview(null) }}
                 className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 text-center ${
                   reportType === rt.key
                     ? 'bg-brand-500 text-white shadow-brand'
@@ -167,13 +170,14 @@ export default function Reportes() {
 
         {/* Fecha */}
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-white/40 uppercase tracking-wide font-medium">
+          <p className="text-xs text-white/60 uppercase tracking-wide font-medium">
             {reportType === 'monthly' ? 'Mes' : 'Fecha de referencia'}
           </p>
           <input
             type={reportType === 'monthly' ? 'month' : 'date'}
             value={reportType === 'monthly' ? dateValue.slice(0, 7) : dateValue}
-            onChange={e => setDateValue(reportType === 'monthly' ? e.target.value + '-01' : e.target.value)}
+            aria-label={reportType === 'monthly' ? 'Mes del reporte' : 'Fecha del reporte'}
+            onChange={e => { setDateValue(e.target.value ? (reportType === 'monthly' ? e.target.value + '-01' : e.target.value) : ''); setPreview(null) }}
             className="input-base w-full sm:w-44"
             style={{ colorScheme: 'dark' }}
           />
@@ -191,7 +195,7 @@ export default function Reportes() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold text-white text-base sm:text-lg">Reporte: {preview.label}</h2>
-              <p className="text-xs text-white/40 mt-0.5">{preview.data.length} ventas encontradas</p>
+              <p className="text-xs text-white/60 mt-0.5">{preview.data.length} ventas encontradas</p>
             </div>
             <Button variant="primary" size="sm" onClick={exportPDF} disabled={preview.data.length === 0} className="w-full sm:w-auto">
               <FileDown size={16} />
@@ -202,21 +206,21 @@ export default function Reportes() {
           {/* Totales */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="card text-center py-4">
-              <p className="text-xs text-white/40 mb-1 uppercase tracking-wider font-semibold">Ventas Normales</p>
+              <p className="text-xs text-white/60 mb-1 uppercase tracking-wider font-semibold">Ventas Normales</p>
               <p className="text-2xl sm:text-3xl font-black text-emerald-400">Bs {preview.normalTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/30 mt-0.5">{preview.data.filter(s => !s.is_admin_sale).length} ventas</p>
+              <p className="text-xs text-white/60 mt-0.5">{preview.data.filter(s => !s.is_admin_sale).length} ventas</p>
             </div>
             <div className="card text-center py-4 border-brand-500/20">
-              <p className="text-xs text-white/40 mb-1 flex items-center justify-center gap-1 uppercase tracking-wider font-semibold">
+              <p className="text-xs text-white/60 mb-1 flex items-center justify-center gap-1 uppercase tracking-wider font-semibold">
                 <AlertTriangle size={11} className="text-brand-400" /> Consumo Interno
               </p>
               <p className="text-2xl sm:text-3xl font-black text-brand-400">Bs {preview.adminTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/30 mt-0.5">{preview.data.filter(s => s.is_admin_sale).length} ventas</p>
+              <p className="text-xs text-white/60 mt-0.5">{preview.data.filter(s => s.is_admin_sale).length} ventas</p>
             </div>
             <div className="card text-center py-4">
-              <p className="text-xs text-white/40 mb-1 uppercase tracking-wider font-semibold">INGRESOS REALES</p>
+              <p className="text-xs text-white/60 mb-1 uppercase tracking-wider font-semibold">INGRESOS REALES</p>
               <p className="text-2xl sm:text-3xl font-black text-white">Bs {preview.normalTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/30 mt-0.5">Total real en caja</p>
+              <p className="text-xs text-white/60 mt-0.5">Total real en caja</p>
             </div>
           </div>
 

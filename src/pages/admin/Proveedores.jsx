@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,16 +13,16 @@ import toast from 'react-hot-toast'
 import { Truck, Plus, Pencil, History, Search, Phone } from 'lucide-react'
 
 const schema = z.object({
-  first_name:  z.string().min(1, 'El nombre es obligatorio').trim(),
-  last_name:   z.string().min(1, 'El apellido es obligatorio').trim(),
-  phone:       z.string().min(1, 'El celular es obligatorio').trim(),
+  first_name:  z.string().trim().min(1, 'El nombre es obligatorio'),
+  last_name:   z.string().trim().min(1, 'El apellido es obligatorio'),
+  phone:       z.string().trim().min(1, 'El celular es obligatorio'),
   description: z.string().optional(),
 })
 
 export default function Proveedores() {
   const navigate = useNavigate()
-  const [suppliers, setSuppliers] = useState([])
-  const [loading,   setLoading]   = useState(true)
+  const [suppliers, setSuppliers] = useState(() => db.getSuppliers())
+  const [loading,   setLoading]   = useState(false)
   const [search,    setSearch]    = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing,   setEditing]   = useState(null)
@@ -38,7 +38,6 @@ export default function Proveedores() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchSuppliers() }, [])
 
   const openCreate = () => {
     setEditing(null)
@@ -92,12 +91,9 @@ export default function Proveedores() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
-            <Truck size={20} className="text-brand-400" />
-          </div>
           <div>
             <h1 className="text-xl font-bold text-white">Proveedores</h1>
-            <p className="text-xs text-white/40">{suppliers.length} proveedores registrados</p>
+            <p className="text-xs text-white/60">{suppliers.length} proveedores registrados</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={openCreate} className="w-full sm:w-auto">
@@ -108,7 +104,7 @@ export default function Proveedores() {
 
       {/* Busqueda */}
       <div className="relative w-full sm:max-w-sm">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/60" />
         <input
           placeholder="Buscar proveedor..."
           value={search}
@@ -122,8 +118,7 @@ export default function Proveedores() {
         {loading ? (
           <div className="flex justify-center py-16"><Spinner size="lg" /></div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-white/30">
-            <Truck size={40} strokeWidth={1} className="mx-auto mb-3" />
+          <div className="text-center py-16 text-white/60">
             <p>No se encontraron proveedores</p>
           </div>
         ) : (
@@ -225,7 +220,7 @@ export default function Proveedores() {
                           </button>
                           <button
                             onClick={() => openEdit(s)}
-                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/40 hover:text-white transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/60 hover:text-white transition-colors"
                           >
                             <Pencil size={15} />
                           </button>

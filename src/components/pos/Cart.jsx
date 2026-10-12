@@ -16,17 +16,18 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
 
   return (
     <div className="
-      flex flex-col w-[85vw] sm:w-80 xl:w-96 shrink-0
+      flex flex-col min-h-0 w-[100vw] sm:w-80 xl:w-96 shrink-0
       bg-surface-100 border-l border-white/8
-      h-full max-w-sm lg:max-w-none
+      h-full max-w-full sm:max-w-sm lg:max-w-none
     ">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-surface-200/50">
         <div className="flex items-center gap-2.5">
           {onCloseMobile && (
             <button 
+              aria-label="Cerrar carrito"
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 -ml-1.5 text-white/40 hover:text-white rounded-lg hover:bg-white/10"
+              className="lg:hidden p-1.5 -ml-1.5 text-white/60 hover:text-white rounded-lg hover:bg-white/10"
             >
               <X size={20} />
             </button>
@@ -42,7 +43,7 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
         {items.length > 0 && (
           <button
             onClick={clearCart}
-            className="p-1.5 rounded-lg hover:bg-red-500/15 text-white/30 hover:text-red-400 transition-all duration-150"
+            className="p-1.5 rounded-lg hover:bg-red-500/15 text-white/60 hover:text-red-400 transition-all duration-150"
             title="Vaciar carrito"
           >
             <Trash2 size={16} />
@@ -51,9 +52,9 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
       </div>
 
       {/* Lista de ítems */}
-      <div className="flex-1 overflow-y-auto px-5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-5">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-white/20 py-12">
+          <div className="flex flex-col items-center justify-center h-full text-white/60 py-12">
             <ShoppingCart size={40} strokeWidth={1} className="mb-3 opacity-30" />
             <p className="text-sm font-bold uppercase tracking-wide">Carrito vacío</p>
             <p className="text-xs mt-1">Toca un producto para agregarlo</p>
@@ -69,12 +70,12 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
 
       {/* Footer con resumen y botón */}
       {items.length > 0 && (
-        <div className="px-4 sm:px-5 py-4 sm:py-6 border-t border-white/8 flex flex-col gap-3 sm:gap-4 bg-surface-200/30 pb-safe">
+        <div className="px-4 sm:px-5 py-4 sm:py-6 border-t border-white/8 flex flex-col gap-3 sm:gap-4 bg-surface-200/30 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
           {/* Resumen de presas */}
           {totalPieces > 0 && (
             <div className="flex items-center justify-between text-xs text-brand-400 font-medium tracking-wide uppercase">
               <span className="flex items-center gap-1.5">
-                🍗 Presas
+                Presas
               </span>
               <span className="text-sm">{totalPieces}</span>
             </div>
@@ -98,12 +99,12 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
                   checked={isAdminSale}
                   onChange={e => setAdminSale(e.target.checked)}
                 />
-                <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-brand-500 transition-all duration-200" />
+                <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-brand-500 peer-focus-visible:ring-2 peer-focus-visible:ring-white transition-all duration-200" />
                 <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 peer-checked:translate-x-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-white tracking-wide uppercase truncate">Venta Admin</p>
-                <p className="text-[10px] text-white/40 uppercase tracking-widest truncate">Sin ingreso</p>
+                <p className="text-[10px] text-white/60 uppercase tracking-widest truncate">Sin ingreso</p>
               </div>
               {isAdminSale && (
                 <AlertTriangle size={15} className="text-brand-400 shrink-0" />
@@ -115,7 +116,7 @@ export default function Cart({ onConfirm, confirming, isAdmin, onIncreaseQty, on
           <Button
             variant="primary"
             size="xl"
-            className="w-full uppercase tracking-widest font-black shadow-glow"
+            className="w-full uppercase tracking-widest font-black "
             loading={confirming}
             disabled={confirming || items.length === 0}
             onClick={onConfirm}

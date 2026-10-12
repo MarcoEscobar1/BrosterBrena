@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { db } from '../../lib/mockDb'
-import { useAuth } from '../../context/AuthContext'
 import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -14,7 +13,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 const productSchema = z.object({
-  name:                    z.string().min(1, 'El nombre es obligatorio').trim(),
+  name:                    z.string().trim().min(1, 'El nombre es obligatorio'),
   description:             z.string().optional(),
   price:                   z.coerce.number().min(0.01, 'El precio debe ser mayor a 0'),
   category:                z.enum(['plato', 'refresco', 'extra'], { required_error: 'Selecciona una categoria' }),
@@ -26,8 +25,8 @@ const CATEGORY_LABELS   = { plato: 'Plato', refresco: 'Refresco', extra: 'Extra'
 const CATEGORY_VARIANTS = { plato: 'orange', refresco: 'purple', extra: 'yellow' }
 
 export default function Productos() {
-  const [products,  setProducts]  = useState([])
-  const [loading,   setLoading]   = useState(true)
+  const [products,  setProducts]  = useState(() => db.getProducts())
+  const [loading,   setLoading]   = useState(false)
   const [search,    setSearch]    = useState('')
   const [filterCat, setFilterCat] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -45,7 +44,6 @@ export default function Productos() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchProducts() }, [])
 
   const openCreate = () => {
     setEditing(null)
@@ -105,12 +103,9 @@ export default function Productos() {
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
-          <div className="page-header-icon">
-            <Package size={20} className="text-brand-400" />
-          </div>
           <div>
             <h1 className="text-lg md:text-xl font-bold text-white">Productos</h1>
-            <p className="text-xs text-white/40">{products.length} registrados</p>
+            <p className="text-xs text-white/60">{products.length} registrados</p>
           </div>
         </div>
         <Button variant="primary" onClick={openCreate} className="w-full sm:w-auto">
@@ -121,7 +116,7 @@ export default function Productos() {
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/60" />
           <input
             placeholder="Buscar producto..."
             value={search}
@@ -146,8 +141,7 @@ export default function Productos() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : filtered.length === 0 ? (
-        <div className="card text-center py-16 text-white/30">
-          <Package size={40} strokeWidth={1} className="mx-auto mb-3" />
+        <div className="card text-center py-16 text-white/60">
           <p>No se encontraron productos</p>
         </div>
       ) : (
@@ -169,7 +163,7 @@ export default function Productos() {
                   <div className="flex items-center gap-3 mt-1">
                     <span className="font-bold text-white">Bs {Number(product.price).toFixed(2)}</span>
                     {product.chicken_pieces_required > 0 && (
-                      <span className="text-xs text-brand-400">{product.chicken_pieces_required} 🍗</span>
+                      <span className="text-xs text-brand-400">{product.chicken_pieces_required} presas</span>
                     )}
                     <Badge variant={product.is_active ? 'green' : 'gray'} className="ml-auto">
                       {product.is_active ? 'Activo' : 'Inactivo'}
@@ -218,21 +212,21 @@ export default function Productos() {
                       <td>
                         <p className="font-medium text-white">{product.name}</p>
                         {product.description && (
-                          <p className="text-xs text-white/40 mt-0.5">{product.description}</p>
+                          <p className="text-xs text-white/60 mt-0.5">{product.description}</p>
                         )}
                       </td>
                       <td><Badge variant={CATEGORY_VARIANTS[product.category]}>{CATEGORY_LABELS[product.category]}</Badge></td>
                       <td className="font-semibold text-white">Bs {Number(product.price).toFixed(2)}</td>
                       <td>
                         {product.chicken_pieces_required > 0
-                          ? <span className="text-brand-400">{product.chicken_pieces_required} 🍗</span>
-                          : <span className="text-white/30">—</span>
+                          ? <span className="text-brand-400">{product.chicken_pieces_required} presas</span>
+                          : <span className="text-white/60">—</span>
                         }
                       </td>
                       <td><Badge variant={product.is_active ? 'green' : 'gray'}>{product.is_active ? 'Activo' : 'Inactivo'}</Badge></td>
                       <td>
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => openEdit(product)} className="p-1.5 rounded-lg hover:bg-white/8 text-white/40 hover:text-white transition-colors">
+                          <button onClick={() => openEdit(product)} className="p-1.5 rounded-lg hover:bg-white/8 text-white/60 hover:text-white transition-colors">
                             <Pencil size={15} />
                           </button>
                           <button

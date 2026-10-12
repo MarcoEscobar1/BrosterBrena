@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,9 +13,9 @@ import toast from 'react-hot-toast'
 import { Users, Plus, UserCheck, UserX, Search, Phone, Shield, User } from 'lucide-react'
 
 const createSchema = z.object({
-  first_name: z.string().min(1, 'El nombre es obligatorio').trim(),
-  last_name:  z.string().min(1, 'El apellido es obligatorio').trim(),
-  phone:      z.string().min(1, 'El celular es obligatorio').trim(),
+  first_name: z.string().trim().min(1, 'El nombre es obligatorio'),
+  last_name:  z.string().trim().min(1, 'El apellido es obligatorio'),
+  phone:      z.string().trim().min(1, 'El celular es obligatorio'),
   username:   z.string().min(3, 'Minimo 3 caracteres').trim()
               .regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, numeros y guiones bajos'),
   role:       z.enum(['admin', 'employee']),
@@ -23,8 +23,8 @@ const createSchema = z.object({
 })
 
 export default function Usuarios() {
-  const [profiles,  setProfiles]  = useState([])
-  const [loading,   setLoading]   = useState(true)
+  const [profiles,  setProfiles]  = useState(() => db.getProfiles())
+  const [loading,   setLoading]   = useState(false)
   const [search,    setSearch]    = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [saving,    setSaving]    = useState(false)
@@ -40,7 +40,6 @@ export default function Usuarios() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchProfiles() }, [])
 
   const onSubmit = async (values) => {
     setSaving(true)
@@ -78,12 +77,9 @@ export default function Usuarios() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0">
-            <Users size={20} className="text-brand-400" />
-          </div>
           <div>
             <h1 className="text-xl font-bold text-white">Usuarios del Sistema</h1>
-            <p className="text-xs text-white/40">{profiles.length} usuarios registrados</p>
+            <p className="text-xs text-white/60">{profiles.length} usuarios registrados</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={() => { reset({ role: 'employee' }); setModalOpen(true) }} className="w-full sm:w-auto">
@@ -94,7 +90,7 @@ export default function Usuarios() {
 
       {/* Busqueda */}
       <div className="relative w-full sm:max-w-sm">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/60" />
         <input
           placeholder="Buscar usuario..."
           value={search}
@@ -122,7 +118,7 @@ export default function Usuarios() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-white truncate text-sm sm:text-base">{p.first_name} {p.last_name}</p>
-                  <p className="text-xs text-white/40 font-mono">@{p.username}</p>
+                  <p className="text-xs text-white/60 font-mono">@{p.username}</p>
                 </div>
                 <div className="ml-auto shrink-0">
                   <Badge variant={p.role === 'admin' ? 'orange' : 'purple'}>
@@ -133,7 +129,7 @@ export default function Usuarios() {
               </div>
 
               {/* Detalles */}
-              <div className="flex items-center gap-2 text-xs text-white/40">
+              <div className="flex items-center gap-2 text-xs text-white/60">
                 <Phone size={12} />
                 {p.phone ?? 'Sin telefono'}
               </div>
@@ -159,8 +155,7 @@ export default function Usuarios() {
           ))}
 
           {filtered.length === 0 && (
-            <div className="col-span-full text-center py-16 text-white/30">
-              <Users size={40} strokeWidth={1} className="mx-auto mb-3" />
+            <div className="col-span-full text-center py-16 text-white/60">
               <p>No se encontraron usuarios</p>
             </div>
           )}
