@@ -6,13 +6,24 @@
   <link rel="icon" type="image/jpeg" href="/Logo.jpg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Sistema de Punto de Venta — Broastería Brena" />
-  <meta name="theme-color" content="#181818" />
+  <meta name="theme-color" content="#f5f6f8" />
+  <script>
+    (() => {
+      let preference;
+      try { preference = localStorage.getItem('brena_theme'); } catch { /* Use the system theme. */ }
+      const theme = preference === 'light' || preference === 'dark'
+        ? preference : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+      document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#141519' : '#f5f6f8';
+    })();
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Broastería Brena</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;650;700;800&display=swap"
     rel="stylesheet" />
 </head>
 

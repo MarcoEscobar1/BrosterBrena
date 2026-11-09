@@ -132,18 +132,18 @@ export default function Inventario() {
   }
 
   return (
-    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 flex flex-col gap-6  max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white">Inventario</h1>
-            <p className="text-xs text-white/60">Control de stock y movimientos</p>
+            <h1 className="text-xl font-bold text-ink">Inventario</h1>
+            <p className="text-xs text-muted">Control de stock y movimientos</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => { fetchAll(); fetchMovements() }} className="flex-1 sm:flex-none">
-            <RefreshCw size={14} />
+            <RefreshCw aria-hidden="true" size={14} />
             <span className="hidden xs:inline">Actualizar</span>
           </Button>
           <Button variant="secondary" size="sm" onClick={openDrinkModal} className="flex-1 sm:flex-none">
@@ -151,7 +151,7 @@ export default function Inventario() {
             Refrescos
           </Button>
           <Button variant="primary" size="sm" onClick={() => { chickenForm.reset({ chickens: 1 }); setModalOpen(true) }} className="w-full sm:w-auto">
-            <Plus size={15} />
+            <Plus aria-hidden="true" size={15} />
             Compra de Pollos
           </Button>
         </div>
@@ -165,8 +165,8 @@ export default function Inventario() {
           {chickenItems.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Drumstick size={16} className="text-brand-400" />
-                <p className="text-xs sm:text-sm font-semibold text-white/70 uppercase tracking-wide">Pollo</p>
+                <Drumstick size={16} className="text-brand-700" />
+                <p className="text-xs sm:text-sm font-semibold text-muted normal-case tracking-normal">Pollo</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {chickenItems.map(item => <StockCard key={item.id} item={item} />)}
@@ -179,7 +179,7 @@ export default function Inventario() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Droplets size={16} className="text-blue-400" />
-                <p className="text-xs sm:text-sm font-semibold text-white/70 uppercase tracking-wide">Refrescos</p>
+                <p className="text-xs sm:text-sm font-semibold text-muted normal-case tracking-normal">Refrescos</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {drinkItems.map(item => <StockCard key={item.id} item={item} />)}
@@ -191,21 +191,21 @@ export default function Inventario() {
 
       {/* Historial de movimientos */}
       <div className="card p-0 overflow-hidden">
-        <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-white/8">
-          <h2 className="font-semibold text-white text-sm sm:text-base">Historial de Movimientos</h2>
-          <span className="text-xs text-white/60">Ultimos 50</span>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-line">
+          <h2 className="font-semibold text-ink text-sm sm:text-base">Historial de Movimientos</h2>
+          <span className="text-xs text-muted">Ultimos 50</span>
         </div>
         {loadingMov ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : movements.length === 0 ? (
-          <div className="text-center py-12 text-white/60">
+          <div className="text-center py-12 text-muted">
             <Clock size={32} strokeWidth={1} className="mx-auto mb-2" />
             <p className="text-sm">Sin movimientos registrados</p>
           </div>
         ) : (
           <>
             {/* Vista en móvil: Cards */}
-            <div className="block md:hidden divide-y divide-white/5">
+            <div className="block md:hidden divide-y divide-line">
               {movements.map(mov => {
                 const meta = MOVEMENT_LABELS[mov.movement_type] ?? MOVEMENT_LABELS.sale
                 const MovIcon = meta.icon
@@ -217,20 +217,20 @@ export default function Inventario() {
                           <MovIcon size={11} />
                           {meta.label}
                         </Badge>
-                        <span className="text-xs font-semibold text-white">
+                        <span className="text-xs font-semibold text-ink">
                           {mov.inventory_items?.name}
                         </span>
                       </div>
-                      <span className={`font-black text-sm ${mov.quantity_change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`font-bold text-sm ${mov.quantity_change > 0 ? 'text-success' : 'text-danger'}`}>
                         {mov.quantity_change > 0 ? '+' : ''}{mov.quantity_change}
                       </span>
                     </div>
                     {mov.notes && (
-                      <p className="text-xs text-white/50 bg-white/5 px-2.5 py-1 rounded-lg">
+                      <p className="text-xs text-muted bg-ink/5 px-2.5 py-1 rounded-lg">
                         {mov.notes}
                       </p>
                     )}
-                    <div className="flex items-center justify-between text-[11px] text-white/60 pt-1">
+                    <div className="flex items-center justify-between text-[11px] text-muted pt-1">
                       <span>{mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}</span>
                       <span>
                         {new Date(mov.created_at).toLocaleDateString('es-BO', {
@@ -268,17 +268,17 @@ export default function Inventario() {
                             {meta.label}
                           </Badge>
                         </td>
-                        <td className="text-white/80 font-medium">{mov.inventory_items?.name}</td>
+                        <td className="text-ink font-medium">{mov.inventory_items?.name}</td>
                         <td>
-                          <span className={`font-bold ${mov.quantity_change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <span className={`font-bold ${mov.quantity_change > 0 ? 'text-success' : 'text-danger'}`}>
                             {mov.quantity_change > 0 ? '+' : ''}{mov.quantity_change}
                           </span>
                         </td>
-                        <td className="text-white/50 text-xs max-w-xs truncate">{mov.notes ?? '-'}</td>
-                        <td className="text-white/60 text-xs">
+                        <td className="text-muted text-xs max-w-xs truncate">{mov.notes ?? '-'}</td>
+                        <td className="text-muted text-xs">
                           {mov.profiles ? `${mov.profiles.first_name} ${mov.profiles.last_name}` : '-'}
                         </td>
-                        <td className="text-white/60 text-xs">
+                        <td className="text-muted text-xs">
                           {new Date(mov.created_at).toLocaleDateString('es-BO', {
                             day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                           })}
@@ -314,16 +314,16 @@ export default function Inventario() {
           />
 
           <div>
-            <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">Notas (opcional)</label>
-            <textarea rows={2} placeholder="Observaciones..." className="input-base resize-none" {...chickenForm.register('notes')} />
+            <label className="text-xs font-medium text-muted normal-case tracking-normal block mb-1.5">Notas (opcional)</label>
+            <textarea rows={2} placeholder="Observaciones…" className="input-base resize-none" {...chickenForm.register('notes')} />
           </div>
 
           {watchChickens > 0 && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-              <TrendingUp size={18} className="text-emerald-400 shrink-0" />
+              <TrendingUp size={18} className="text-success shrink-0" />
               <div>
-                <p className="text-sm text-emerald-400 font-semibold">+{watchChickens * 10} presas se agregaran al inventario</p>
-                <p className="text-xs text-white/60">{watchChickens} pollos x 10 presas/pollo</p>
+                <p className="text-sm text-success font-semibold">+{watchChickens * 10} presas se agregaran al inventario</p>
+                <p className="text-xs text-muted">{watchChickens} pollos x 10 presas/pollo</p>
               </div>
             </div>
           )}
@@ -362,8 +362,8 @@ export default function Inventario() {
           />
 
           <div>
-            <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">Notas (opcional)</label>
-            <textarea rows={2} placeholder="Ej: Caja de 12 unidades..." className="input-base resize-none" {...drinkForm.register('notes')} />
+            <label className="text-xs font-medium text-muted normal-case tracking-normal block mb-1.5">Notas (opcional)</label>
+            <textarea rows={2} placeholder="Ej: Caja de 12 unidades…" className="input-base resize-none" {...drinkForm.register('notes')} />
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -381,14 +381,14 @@ function StockCard({ item }) {
   const StatusIcon = status.icon
   return (
     <div className={`card border ${
-      status.variant === 'red'    ? 'border-red-500/30 bg-red-500/5' :
+      status.variant === 'red'    ? 'border-red-500/30 bg-danger-soft0/5' :
       status.variant === 'yellow' ? 'border-yellow-500/30 bg-yellow-500/5' :
       'border-emerald-500/20'
     }`}>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-xs text-white/60 uppercase tracking-wide font-medium">{item.unit}</p>
-          <p className="text-base font-semibold text-white mt-0.5">{item.name}</p>
+          <p className="text-xs text-muted normal-case tracking-normal font-medium">{item.unit}</p>
+          <p className="text-base font-semibold text-ink mt-0.5">{item.name}</p>
         </div>
         <Badge variant={status.variant}>
           <StatusIcon size={11} />
@@ -398,16 +398,16 @@ function StockCard({ item }) {
       <div className="flex items-end justify-between">
         <div>
           <p className={`text-3xl sm:text-4xl font-bold ${
-            status.variant === 'red' ? 'text-red-400' :
-            status.variant === 'yellow' ? 'text-yellow-400' : 'text-emerald-400'
+            status.variant === 'red' ? 'text-danger' :
+            status.variant === 'yellow' ? 'text-warning' : 'text-success'
           }`}>
             {Math.floor(item.quantity)}
           </p>
-          <p className="text-xs text-white/60 mt-0.5">Minimo: {item.min_stock} {item.unit}s</p>
+          <p className="text-xs text-muted mt-0.5">Minimo: {item.min_stock} {item.unit}s</p>
         </div>
         {status.variant !== 'green' && (
-          <AlertTriangle size={20} className={
-            status.variant === 'red' ? 'text-red-400' : 'text-yellow-400'
+          <AlertTriangle aria-hidden="true" size={20} className={
+            status.variant === 'red' ? 'text-danger' : 'text-warning'
           } />
         )}
       </div>

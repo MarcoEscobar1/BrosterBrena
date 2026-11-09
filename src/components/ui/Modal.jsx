@@ -1,5 +1,6 @@
 import { useEffect, useRef, useId } from 'react'
 import { X } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 /**
  * Modal reutilizable.
@@ -58,10 +59,9 @@ export default function Modal({
 
   if (!open) return null
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+  return createPortal(<div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 "
+      style={{ background: 'rgba(32,37,44,0.42)' }}
       onClick={(e) => { if (e.target === e.currentTarget && !hideClose) onClose?.() }}
     >
       <div
@@ -72,34 +72,34 @@ export default function Modal({
         aria-label={title ? undefined : 'Diálogo'}
         tabIndex={-1}
         className={`
-          bg-surface-50 w-full ${maxWClass} animate-slide-up
+          bg-surface-50 w-full ${maxWClass}
           rounded-t-2xl sm:rounded-2xl shadow-2xl
           max-h-[92dvh] overflow-y-auto
           pb-safe
         `}
-        style={{ border: '1px solid rgba(255,255,255,0.12)' }}
+
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle (solo móvil) */}
         {!hideClose && (
           <div className="sm:hidden flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-white/20" />
+            <div className="w-10 h-1 rounded-full bg-ink/5" />
           </div>
         )}
 
         {/* Header */}
         {(title || !hideClose) && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 sticky top-0 bg-surface-50 z-10">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line sticky top-0 bg-surface-50 z-10">
             {title && (
-              <h2 id={titleId} className="text-base font-semibold text-white">{title}</h2>
+              <h2 id={titleId} className="text-base font-semibold text-ink">{title}</h2>
             )}
             {!hideClose && (
               <button
                 aria-label="Cerrar diálogo"
                 onClick={onClose}
-                className="ml-auto p-2 rounded-xl hover:bg-white/8 text-white/60 hover:text-white transition-colors"
+                className="ml-auto p-2 rounded-xl hover:bg-ink/5 text-muted hover:text-ink transition-colors"
               >
-                <X size={18} />
+                <X aria-hidden="true" size={18} />
               </button>
             )}
           </div>
@@ -111,5 +111,5 @@ export default function Modal({
         </div>
       </div>
     </div>
-  )
+  , document.body)
 }

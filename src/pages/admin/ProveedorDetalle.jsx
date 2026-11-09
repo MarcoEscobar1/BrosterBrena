@@ -41,7 +41,7 @@ export default function ProveedorDetalle() {
   )
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-      <Button variant="ghost" onClick={goBack} className="mb-4"><ArrowLeft size={18} />Proveedores</Button>
+      <Button variant="ghost" onClick={goBack} className="mb-4"><ArrowLeft aria-hidden="true" size={18} />Proveedores</Button>
       <h1 className="text-xl font-bold mb-6">{id ? 'Editar proveedor' : 'Nuevo proveedor'}</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -50,7 +50,7 @@ export default function ProveedorDetalle() {
         </div>
         <Input label="Número de celular" type="tel" error={errors.phone?.message} {...register('phone')} />
         <div>
-          <label htmlFor="supplier-description" className="block text-xs text-white/60 mb-2">Descripción (qué nos provee)</label>
+          <label htmlFor="supplier-description" className="block text-xs text-muted mb-2">Descripción (qué nos provee)</label>
           <textarea id="supplier-description" rows={3} className="input-base" {...register('description')} />
         </div>
         <div className="flex flex-wrap gap-3 mt-2">

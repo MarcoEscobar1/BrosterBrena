@@ -1,8 +1,8 @@
 import { useRef } from 'react'
-import { Printer, AlertTriangle } from 'lucide-react'
+import { Printer, AlertTriangle, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
-import toast from 'react-hot-toast'
+import { printReceipt } from '../../lib/printReceipt'
 
 /**
  * ReceiptModal — muestra el recibo después de una venta exitosa.
@@ -21,98 +21,67 @@ export default function ReceiptModal({ open, receipt, onClose }) {
     hour: '2-digit', minute: '2-digit'
   })
 
-  const handlePrint = () => {
-    const content = printRef.current?.innerHTML
-    if (!content) return
-
-    const win = window.open('', '_blank', 'width=400,height=600')
-    if (!win) { toast.error('Permite las ventanas emergentes para imprimir el recibo.'); return }
-    win.document.write(`
-      <html>
-        <head>
-          <title>Recibo ${receipt.receipt_number}</title>
-          <style>
-            body * { color: #000 !important; background: transparent !important; }
-            body { font-family: monospace; font-size: 12px; margin: 20px; color: #000; }
-            .center { text-align: center; }
-            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { text-align: left; padding: 2px 4px; }
-            th { border-bottom: 1px dashed #000; }
-            .right { text-align: right; }
-            .bold { font-weight: bold; }
-            .total { font-size: 14px; }
-            .admin-note { text-align: center; border: 1px dashed #000; padding: 4px; margin-top: 8px; }
-          </style>
-        </head>
-        <body>${content}</body>
-      </html>
-    `)
-    win.document.close()
-    win.onafterprint = () => win.close()
-    win.focus()
-    win.print()
-  }
+  const handlePrint = () => printReceipt(printRef.current)
 
   return (
     <Modal open={open} onClose={onClose} size="md" title="Venta Registrada">
       {/* Recibo visual */}
       <div
         ref={printRef}
-        className="bg-surface-400 rounded-xl p-4 sm:p-5 font-mono text-xs sm:text-sm border border-white/8 mb-4 max-h-[58vh] overflow-y-auto"
+        className="bg-surface-400 rounded-xl p-4 sm:p-5 font-mono text-xs sm:text-sm border border-line mb-4 max-h-[58vh] overflow-y-auto"
         id="receipt-content"
       >
         {/* Cabecera */}
         <div className="text-center mb-4">
-          <p className="font-bold text-white text-base">BROASTERÍA BRENA</p>
-          <div className="border-t border-dashed border-white/20 my-2" />
-          <p className="text-white/60 text-xs">Recibo N°: <span className="text-white font-semibold">{receipt.receipt_number}</span></p>
-          <p className="text-white/60 text-xs">Fecha: <span className="text-white">{dateStr}  {timeStr}</span></p>
-          <p className="text-white/60 text-xs">Atendido por: <span className="text-white">{receipt.employee_name}</span></p>
+          <p className="font-bold text-ink text-base">BROASTERÍA BRENA</p>
+          <div className="border-t border-dashed border-line my-2" />
+          <p className="text-muted text-xs">Recibo N°: <span className="text-ink font-semibold">{receipt.receipt_number}</span></p>
+          <p className="text-muted text-xs">Fecha: <span className="text-ink">{dateStr}  {timeStr}</span></p>
+          <p className="text-muted text-xs">Atendido por: <span className="text-ink">{receipt.employee_name}</span></p>
         </div>
 
-        <div className="border-t border-dashed border-white/20 mb-3" />
+        <div className="border-t border-dashed border-line mb-3" />
 
         {/* Items */}
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-dashed border-white/20">
-              <th className="text-left text-white/50 pb-1.5 font-semibold">PRODUCTO</th>
-              <th className="text-center text-white/50 pb-1.5 font-semibold">CANT</th>
-              <th className="text-right text-white/50 pb-1.5 font-semibold">P/U</th>
-              <th className="text-right text-white/50 pb-1.5 font-semibold">SUBT.</th>
+            <tr className="border-b border-dashed border-line">
+              <th className="text-left text-muted pb-1.5 font-semibold">PRODUCTO</th>
+              <th className="text-center text-muted pb-1.5 font-semibold">CANT</th>
+              <th className="text-right text-muted pb-1.5 font-semibold">P/U</th>
+              <th className="text-right text-muted pb-1.5 font-semibold">SUBT.</th>
             </tr>
           </thead>
           <tbody>
             {receipt.items?.map((item, idx) => (
-              <tr key={idx} className="border-b border-white/5">
-                <td className="py-1.5 text-white/80">{item.product_name}</td>
-                <td className="py-1.5 text-center text-white/80">{item.quantity}</td>
-                <td className="py-1.5 text-right text-white/80">{Number(item.unit_price).toFixed(2)}</td>
-                <td className="py-1.5 text-right text-white font-semibold">{Number(item.subtotal).toFixed(2)}</td>
+              <tr key={idx} className="border-b border-line">
+                <td className="py-1.5 text-ink">{item.product_name}</td>
+                <td className="py-1.5 text-center text-ink">{item.quantity}</td>
+                <td className="py-1.5 text-right text-ink">{Number(item.unit_price).toFixed(2)}</td>
+                <td className="py-1.5 text-right text-ink font-semibold">{Number(item.subtotal).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <div className="border-t border-dashed border-white/20 mt-3 pt-3">
+        <div className="border-t border-dashed border-line mt-3 pt-3">
           <div className="flex justify-between items-center">
-            <span className="text-white/60 text-sm font-semibold">TOTAL</span>
-            <span className="text-xl font-bold text-white">
+            <span className="text-muted text-sm font-semibold">TOTAL</span>
+            <span className="text-xl font-bold text-ink">
               Bs {Number(receipt.total_amount || receipt.total || 0).toFixed(2)}
             </span>
           </div>
         </div>
 
-        <div className="border-t border-dashed border-white/20 mt-3 pt-2">
-          <p className="text-center text-xs text-white/60">Factura local · Sin impuestos</p>
+        <div className="border-t border-dashed border-line mt-3 pt-2">
+          <p className="text-center text-xs text-muted">Factura local · Sin impuestos</p>
         </div>
 
         {/* Leyenda venta admin */}
         {receipt.is_admin_sale && (
           <div className="mt-3 border border-dashed border-brand-500/50 rounded-lg px-3 py-2 bg-brand-500/8 flex items-center justify-center gap-2">
-            <AlertTriangle size={14} className="text-brand-400" />
-            <p className="text-brand-400 text-xs font-bold text-center">
+            <AlertTriangle aria-hidden="true" size={14} className="text-brand-700" />
+            <p className="text-brand-700 text-xs font-bold text-center">
               CONSUMO INTERNO — SIN CARGO
             </p>
           </div>
@@ -122,7 +91,7 @@ export default function ReceiptModal({ open, receipt, onClose }) {
       {/* Acciones */}
       <div className="flex gap-3">
         <Button variant="secondary" className="flex-1" onClick={onClose}>
-          <X size={16} />
+          <X aria-hidden="true" size={16} />
           Cerrar
         </Button>
         <Button variant="primary" className="flex-1" onClick={handlePrint}>

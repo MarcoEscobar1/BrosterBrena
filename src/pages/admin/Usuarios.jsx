@@ -1,3 +1,4 @@
+import { useQueryState } from '../../hooks/useQueryState'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -25,7 +26,7 @@ const createSchema = z.object({
 export default function Usuarios() {
   const [profiles,  setProfiles]  = useState(() => db.getProfiles())
   const [loading,   setLoading]   = useState(false)
-  const [search,    setSearch]    = useState('')
+  const [search, setSearch] = useQueryState('search', '')
   const [modalOpen, setModalOpen] = useState(false)
   const [saving,    setSaving]    = useState(false)
 
@@ -73,26 +74,25 @@ export default function Usuarios() {
   )
 
   return (
-    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 flex flex-col gap-6  max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white">Usuarios del Sistema</h1>
-            <p className="text-xs text-white/60">{profiles.length} usuarios registrados</p>
+            <h1 className="text-xl font-bold text-ink">Usuarios del Sistema</h1>
+            <p className="text-xs text-muted">{profiles.length} usuarios registrados</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={() => { reset({ role: 'employee' }); setModalOpen(true) }} className="w-full sm:w-auto">
-          <Plus size={16} />
+          <Plus aria-hidden="true" size={16} />
           Nuevo Usuario
         </Button>
       </div>
 
       {/* Busqueda */}
       <div className="relative w-full sm:max-w-sm">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/60" />
-        <input
-          placeholder="Buscar usuario..."
+        <Search aria-hidden="true" size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+        <input name="search" autoComplete="off" aria-label="Buscar usuario" placeholder="Buscar usuario…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="input-base pl-9 w-full"
@@ -112,13 +112,13 @@ export default function Usuarios() {
               {/* Avatar + info */}
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center shrink-0">
-                  <span className="font-bold text-brand-400 text-sm">
+                  <span className="font-bold text-brand-700 text-sm">
                     {p.first_name[0]?.toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-white truncate text-sm sm:text-base">{p.first_name} {p.last_name}</p>
-                  <p className="text-xs text-white/60 font-mono">@{p.username}</p>
+                  <p className="font-semibold text-ink truncate text-sm sm:text-base">{p.first_name} {p.last_name}</p>
+                  <p className="text-xs text-muted font-mono">@{p.username}</p>
                 </div>
                 <div className="ml-auto shrink-0">
                   <Badge variant={p.role === 'admin' ? 'orange' : 'purple'}>
@@ -129,13 +129,13 @@ export default function Usuarios() {
               </div>
 
               {/* Detalles */}
-              <div className="flex items-center gap-2 text-xs text-white/60">
+              <div className="flex items-center gap-2 text-xs text-muted">
                 <Phone size={12} />
                 {p.phone ?? 'Sin telefono'}
               </div>
 
               {/* Estado + accion */}
-              <div className="flex items-center justify-between pt-1 border-t border-white/8">
+              <div className="flex items-center justify-between pt-1 border-t border-line">
                 <Badge variant={p.is_active ? 'green' : 'gray'}>
                   {p.is_active ? <UserCheck size={10} /> : <UserX size={10} />}
                   {p.is_active ? 'Activo' : 'Inactivo'}
@@ -144,8 +144,8 @@ export default function Usuarios() {
                   onClick={() => toggleActive(p)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors active:scale-95 ${
                     p.is_active
-                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                      : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                      ? 'bg-danger-soft0/10 text-danger hover:bg-danger-soft0/20'
+                      : 'bg-emerald-500/10 text-success hover:bg-emerald-500/20'
                   }`}
                 >
                   {p.is_active ? 'Desactivar' : 'Activar'}
@@ -155,7 +155,7 @@ export default function Usuarios() {
           ))}
 
           {filtered.length === 0 && (
-            <div className="col-span-full text-center py-16 text-white/60">
+            <div className="col-span-full text-center py-16 text-muted">
               <p>No se encontraron usuarios</p>
             </div>
           )}
@@ -191,7 +191,7 @@ export default function Usuarios() {
             {...register('password')}
           />
 
-          <div className="bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 text-xs text-brand-400">
+          <div className="bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 text-xs text-brand-700">
             El usuario podra iniciar sesion inmediatamente con estas credenciales.
           </div>
 

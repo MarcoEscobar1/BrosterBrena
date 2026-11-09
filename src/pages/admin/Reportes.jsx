@@ -136,12 +136,12 @@ export default function Reportes() {
   }
 
   return (
-    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 flex flex-col gap-6  max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">Reportes</h1>
-          <p className="text-xs text-white/60">Generacion y exportacion de PDFs</p>
+          <h1 className="text-xl font-bold text-ink">Reportes</h1>
+          <p className="text-xs text-muted">Generacion y exportacion de PDFs</p>
         </div>
       </div>
 
@@ -149,17 +149,17 @@ export default function Reportes() {
       <div className="card flex flex-col sm:flex-row flex-wrap sm:items-end gap-4">
         {/* Tipo de reporte */}
         <div className="flex flex-col gap-2 flex-1 min-w-0">
-          <p className="text-xs text-white/60 uppercase tracking-wide font-medium">Tipo de Reporte</p>
+          <p className="text-xs text-muted normal-case tracking-normal font-medium">Tipo de Reporte</p>
           <div className="flex flex-wrap gap-2">
             {REPORT_TYPES.map(rt => (
               <button
                 key={rt.key}
                 aria-pressed={reportType === rt.key}
                 onClick={() => { setReportType(rt.key); setPreview(null) }}
-                className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 text-center ${
+                className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-150 text-center ${
                   reportType === rt.key
                     ? 'bg-brand-500 text-white shadow-brand'
-                    : 'bg-surface-400 text-white/50 hover:text-white hover:bg-surface-300 border border-white/8'
+                    : 'bg-surface-400 text-muted hover:text-ink hover:bg-surface-300 border border-line'
                 }`}
               >
                 {rt.label}
@@ -170,7 +170,7 @@ export default function Reportes() {
 
         {/* Fecha */}
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-white/60 uppercase tracking-wide font-medium">
+          <p className="text-xs text-muted normal-case tracking-normal font-medium">
             {reportType === 'monthly' ? 'Mes' : 'Fecha de referencia'}
           </p>
           <input
@@ -179,7 +179,7 @@ export default function Reportes() {
             aria-label={reportType === 'monthly' ? 'Mes del reporte' : 'Fecha del reporte'}
             onChange={e => { setDateValue(e.target.value ? (reportType === 'monthly' ? e.target.value + '-01' : e.target.value) : ''); setPreview(null) }}
             className="input-base w-full sm:w-44"
-            style={{ colorScheme: 'dark' }}
+
           />
         </div>
 
@@ -190,15 +190,15 @@ export default function Reportes() {
 
       {/* Preview */}
       {preview && (
-        <div className="flex flex-col gap-4 animate-fade-in">
+        <div className="flex flex-col gap-4 ">
           {/* Resumen */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-white text-base sm:text-lg">Reporte: {preview.label}</h2>
-              <p className="text-xs text-white/60 mt-0.5">{preview.data.length} ventas encontradas</p>
+              <h2 className="font-semibold text-ink text-base sm:text-lg">Reporte: {preview.label}</h2>
+              <p className="text-xs text-muted mt-0.5">{preview.data.length} ventas encontradas</p>
             </div>
             <Button variant="primary" size="sm" onClick={exportPDF} disabled={preview.data.length === 0} className="w-full sm:w-auto">
-              <FileDown size={16} />
+              <FileDown aria-hidden="true" size={16} />
               Exportar PDF
             </Button>
           </div>
@@ -206,21 +206,21 @@ export default function Reportes() {
           {/* Totales */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="card text-center py-4">
-              <p className="text-xs text-white/60 mb-1 uppercase tracking-wider font-semibold">Ventas Normales</p>
-              <p className="text-2xl sm:text-3xl font-black text-emerald-400">Bs {preview.normalTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/60 mt-0.5">{preview.data.filter(s => !s.is_admin_sale).length} ventas</p>
+              <p className="text-xs text-muted mb-1 normal-case tracking-normal font-semibold">Ventas Normales</p>
+              <p className="text-2xl sm:text-3xl font-bold text-success">Bs {preview.normalTotal.toFixed(2)}</p>
+              <p className="text-xs text-muted mt-0.5">{preview.data.filter(s => !s.is_admin_sale).length} ventas</p>
             </div>
             <div className="card text-center py-4 border-brand-500/20">
-              <p className="text-xs text-white/60 mb-1 flex items-center justify-center gap-1 uppercase tracking-wider font-semibold">
-                <AlertTriangle size={11} className="text-brand-400" /> Consumo Interno
+              <p className="text-xs text-muted mb-1 flex items-center justify-center gap-1 normal-case tracking-normal font-semibold">
+                <AlertTriangle aria-hidden="true" size={11} className="text-brand-700" /> Consumo Interno
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-brand-400">Bs {preview.adminTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/60 mt-0.5">{preview.data.filter(s => s.is_admin_sale).length} ventas</p>
+              <p className="text-2xl sm:text-3xl font-bold text-brand-700">Bs {preview.adminTotal.toFixed(2)}</p>
+              <p className="text-xs text-muted mt-0.5">{preview.data.filter(s => s.is_admin_sale).length} ventas</p>
             </div>
             <div className="card text-center py-4">
-              <p className="text-xs text-white/60 mb-1 uppercase tracking-wider font-semibold">INGRESOS REALES</p>
-              <p className="text-2xl sm:text-3xl font-black text-white">Bs {preview.normalTotal.toFixed(2)}</p>
-              <p className="text-xs text-white/60 mt-0.5">Total real en caja</p>
+              <p className="text-xs text-muted mb-1 normal-case tracking-normal font-semibold">INGRESOS REALES</p>
+              <p className="text-2xl sm:text-3xl font-bold text-ink">Bs {preview.normalTotal.toFixed(2)}</p>
+              <p className="text-xs text-muted mt-0.5">Total real en caja</p>
             </div>
           </div>
 
@@ -228,16 +228,16 @@ export default function Reportes() {
           {preview.data.length > 0 && (
             <div className="card p-0 overflow-hidden">
               {/* Móvil: Cards */}
-              <div className="block md:hidden divide-y divide-white/5 max-h-96 overflow-y-auto">
+              <div className="block md:hidden divide-y divide-line max-h-96 overflow-y-auto">
                 {preview.data.map(sale => (
                   <div key={sale.id} className={`p-3.5 flex flex-col gap-1.5 ${sale.is_admin_sale ? 'bg-brand-500/5' : ''}`}>
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-white/80">{sale.receipt_number}</span>
-                      <span className={`font-black text-sm ${sale.is_admin_sale ? 'text-brand-400' : 'text-white'}`}>
+                      <span className="font-mono text-xs font-bold text-ink">{sale.receipt_number}</span>
+                      <span className={`font-bold text-sm ${sale.is_admin_sale ? 'text-brand-700' : 'text-ink'}`}>
                         Bs {Number(sale.total_amount).toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-white/50">
+                    <div className="flex items-center justify-between text-xs text-muted">
                       <span>{sale.employee_name}</span>
                       <span>
                         {new Date(sale.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
@@ -245,7 +245,7 @@ export default function Reportes() {
                     </div>
                     <div className="pt-1">
                       {sale.is_admin_sale
-                        ? <Badge variant="orange"><AlertTriangle size={10} />Consumo Interno</Badge>
+                        ? <Badge variant="orange"><AlertTriangle aria-hidden="true" size={10} />Consumo Interno</Badge>
                         : <Badge variant="green">Normal</Badge>
                       }
                     </div>
@@ -269,16 +269,16 @@ export default function Reportes() {
                     {preview.data.map(sale => (
                       <tr key={sale.id} className={sale.is_admin_sale ? 'admin-sale-row' : ''}>
                         <td className="font-mono text-xs">{sale.receipt_number}</td>
-                        <td className="text-xs text-white/60">
+                        <td className="text-xs text-muted">
                           {new Date(sale.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </td>
-                        <td className="text-white/80">{sale.employee_name}</td>
-                        <td className={`font-semibold ${sale.is_admin_sale ? 'text-brand-400' : 'text-white'}`}>
+                        <td className="text-ink">{sale.employee_name}</td>
+                        <td className={`font-semibold ${sale.is_admin_sale ? 'text-brand-700' : 'text-ink'}`}>
                           Bs {Number(sale.total_amount).toFixed(2)}
                         </td>
                         <td>
                           {sale.is_admin_sale
-                            ? <Badge variant="orange"><AlertTriangle size={10} />Interno</Badge>
+                            ? <Badge variant="orange"><AlertTriangle aria-hidden="true" size={10} />Interno</Badge>
                             : <Badge variant="green">Normal</Badge>
                           }
                         </td>

@@ -63,16 +63,15 @@ const SEED_PROFILES = [
 ]
 
 const SEED_PRODUCTS = [
-  { id: 'prod-001', name: 'Economico', description: '2 presas + refresco', price: 22, category: 'plato', chicken_pieces_required: 2, is_active: true },
-  { id: 'prod-002', name: 'Personal', description: '3 presas + refresco', price: 30, category: 'plato', chicken_pieces_required: 3, is_active: true },
-  { id: 'prod-003', name: 'Familiar Pequeno', description: '6 presas + 2 refrescos', price: 55, category: 'plato', chicken_pieces_required: 6, is_active: true },
-  { id: 'prod-004', name: 'Familiar Grande', description: '10 presas + 3 refrescos', price: 90, category: 'plato', chicken_pieces_required: 10, is_active: true },
-  { id: 'prod-005', name: 'Presa Extra', description: 'Presa adicional', price: 8, category: 'extra', chicken_pieces_required: 1, is_active: true },
+  { id: 'prod-001', name: 'Economico', description: '1 presas', price: 22, category: 'plato', chicken_pieces_required: 1, is_active: true },
+  { id: 'prod-002', name: 'Personal', description: '2 presas + refresco', price: 30, category: 'plato', chicken_pieces_required: 2, is_active: true },
+  { id: 'prod-003', name: 'Familiar Pequeno', description: '5 presas + 1 refrescos', price: 55, category: 'plato', chicken_pieces_required: 5, is_active: true },
+  { id: 'prod-004', name: 'Familiar Grande', description: '8 presas + 2 refrescos', price: 90, category: 'plato', chicken_pieces_required: 8, is_active: true },
+  { id: 'prod-005', name: 'Presa Extra', description: 'Presa adicional', price: 10, category: 'extra', chicken_pieces_required: 1, is_active: true },
   { id: 'prod-006', name: 'Papas Fritas', description: 'Porcion de papas', price: 10, category: 'extra', chicken_pieces_required: 0, is_active: true },
-  { id: 'prod-007', name: 'Coca-Cola', description: 'Botella 500ml', price: 7, category: 'refresco', chicken_pieces_required: 0, is_active: true },
-  { id: 'prod-008', name: 'Pepsi', description: 'Botella 500ml', price: 7, category: 'refresco', chicken_pieces_required: 0, is_active: true },
-  { id: 'prod-009', name: 'Agua', description: 'Botella 500ml', price: 4, category: 'refresco', chicken_pieces_required: 0, is_active: true },
-  { id: 'prod-010', name: 'Singani', description: 'Bebida local', price: 5, category: 'refresco', chicken_pieces_required: 0, is_active: true },
+  { id: 'prod-007', name: 'Coca-Cola', description: 'Botella 500ml', price: 10, category: 'refresco', chicken_pieces_required: 0, is_active: true },
+  { id: 'prod-008', name: 'Pepsi', description: 'Botella 500ml', price: 10, category: 'refresco', chicken_pieces_required: 0, is_active: true },
+  { id: 'prod-009', name: 'Agua', description: 'Botella 500ml', price: 7, category: 'refresco', chicken_pieces_required: 0, is_active: true },
 ]
 
 const SEED_INVENTORY = [
@@ -80,7 +79,6 @@ const SEED_INVENTORY = [
   { id: 'inv-002', slug: 'coca_cola', name: 'Coca-Cola', quantity: 48, min_stock: 12, unit: 'botella' },
   { id: 'inv-003', slug: 'pepsi', name: 'Pepsi', quantity: 36, min_stock: 12, unit: 'botella' },
   { id: 'inv-004', slug: 'agua', name: 'Agua', quantity: 24, min_stock: 6, unit: 'botella' },
-  { id: 'inv-005', slug: 'singani', name: 'Singani', quantity: 18, min_stock: 6, unit: 'botella' },
 ]
 
 const SEED_SUPPLIERS = [
@@ -145,40 +143,40 @@ function generateSeedSales(products) {
 }
 
 // ─── Inicializar / Cargar estado ──────────────────────────────────────────────
-let _profiles           = load('profiles',              SEED_PROFILES)
-let _products           = load('products',              SEED_PRODUCTS)
-let _inventory          = load('inventory',             SEED_INVENTORY)
-let _suppliers          = load('suppliers',             SEED_SUPPLIERS)
-let _movements          = load('movements',             [])
-let _purchaseOrders     = load('purchase_orders',       [])
-let _purchaseOrderItems = load('purchase_order_items',  [])
+let _profiles = load('profiles', SEED_PROFILES)
+let _products = load('products', SEED_PRODUCTS)
+let _inventory = load('inventory', SEED_INVENTORY)
+let _suppliers = load('suppliers', SEED_SUPPLIERS)
+let _movements = load('movements', [])
+let _purchaseOrders = load('purchase_orders', [])
+let _purchaseOrderItems = load('purchase_order_items', [])
 
-let _sales     = []
+let _sales = []
 let _saleItems = []
 
 if (!load('sales_seeded', false)) {
   const seeded = generateSeedSales(SEED_PRODUCTS)
-  _sales     = seeded.sales
+  _sales = seeded.sales
   _saleItems = seeded.saleItems
   save('sales_seeded', true)
-  save('sales',      _sales)
+  save('sales', _sales)
   save('sale_items', _saleItems)
 } else {
-  _sales     = load('sales',      [])
+  _sales = load('sales', [])
   _saleItems = load('sale_items', [])
 }
 
 // ─── Funciones de persistencia ────────────────────────────────────────────────
 const persist = () => {
-  save('profiles',              _profiles)
-  save('products',              _products)
-  save('inventory',             _inventory)
-  save('suppliers',             _suppliers)
-  save('movements',             _movements)
-  save('sales',                 _sales)
-  save('sale_items',            _saleItems)
-  save('purchase_orders',       _purchaseOrders)
-  save('purchase_order_items',  _purchaseOrderItems)
+  save('profiles', _profiles)
+  save('products', _products)
+  save('inventory', _inventory)
+  save('suppliers', _suppliers)
+  save('movements', _movements)
+  save('sales', _sales)
+  save('sale_items', _saleItems)
+  save('purchase_orders', _purchaseOrders)
+  save('purchase_order_items', _purchaseOrderItems)
 }
 
 // ─── API pública ──────────────────────────────────────────────────────────────
@@ -400,9 +398,9 @@ export const db = {
 
     const saleId = uuidv4()
     const now = new Date()
-    const y   = now.getFullYear()
-    const m   = String(now.getMonth() + 1).padStart(2, '0')
-    const d   = String(now.getDate()).padStart(2, '0')
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, '0')
+    const d = String(now.getDate()).padStart(2, '0')
     const receiptNumber = 'REC-' + y + m + d + '-' + String(_sales.length + 1).padStart(4, '0')
     const total = items.reduce((a, i) => a + i.subtotal, 0)
 
@@ -457,15 +455,15 @@ export const db = {
       })(),
     }))
 
-    if (from)   result = result.filter(s => new Date(s.created_at) >= new Date(from))
-    if (to)     result = result.filter(s => new Date(s.created_at) <= new Date(to))
+    if (from) result = result.filter(s => new Date(s.created_at) >= new Date(from))
+    if (to) result = result.filter(s => new Date(s.created_at) <= new Date(to))
     if (search) result = result.filter(s => s.receipt_number.toLowerCase().includes(search.toLowerCase()))
     if (filterType === 'normal') result = result.filter(s => !s.is_admin_sale)
-    if (filterType === 'admin')  result = result.filter(s =>  s.is_admin_sale)
+    if (filterType === 'admin') result = result.filter(s => s.is_admin_sale)
 
     result = result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     const total = result.length
-    const data  = result.slice(pg * ps, (pg + 1) * ps)
+    const data = result.slice(pg * ps, (pg + 1) * ps)
     return { data, total }
   },
 

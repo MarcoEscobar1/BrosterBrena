@@ -1,5 +1,6 @@
+import { useQueryState } from '../../hooks/useQueryState'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,10 +21,9 @@ const schema = z.object({
 })
 
 export default function Proveedores() {
-  const navigate = useNavigate()
   const [suppliers, setSuppliers] = useState(() => db.getSuppliers())
   const [loading,   setLoading]   = useState(false)
-  const [search,    setSearch]    = useState('')
+  const [search, setSearch] = useQueryState('search', '')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing,   setEditing]   = useState(null)
   const [saving,    setSaving]    = useState(false)
@@ -87,26 +87,25 @@ export default function Proveedores() {
   )
 
   return (
-    <div className="p-4 sm:p-6 flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 flex flex-col gap-6  max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white">Proveedores</h1>
-            <p className="text-xs text-white/60">{suppliers.length} proveedores registrados</p>
+            <h1 className="text-xl font-bold text-ink">Proveedores</h1>
+            <p className="text-xs text-muted">{suppliers.length} proveedores registrados</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={openCreate} className="w-full sm:w-auto">
-          <Plus size={16} />
+          <Plus aria-hidden="true" size={16} />
           Nuevo Proveedor
         </Button>
       </div>
 
       {/* Busqueda */}
       <div className="relative w-full sm:max-w-sm">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/60" />
-        <input
-          placeholder="Buscar proveedor..."
+        <Search aria-hidden="true" size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+        <input name="search" autoComplete="off" aria-label="Buscar proveedor" placeholder="Buscar proveedor…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="input-base pl-9 w-full"
@@ -118,19 +117,19 @@ export default function Proveedores() {
         {loading ? (
           <div className="flex justify-center py-16"><Spinner size="lg" /></div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-white/60">
+          <div className="text-center py-16 text-muted">
             <p>No se encontraron proveedores</p>
           </div>
         ) : (
           <>
             {/* Vista en móvil: Cards */}
-            <div className="block md:hidden divide-y divide-white/5">
+            <div className="block md:hidden divide-y divide-line">
               {filtered.map(s => (
                 <div key={s.id} className={`p-4 flex flex-col gap-3 ${!s.is_active ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-bold text-white text-base">{s.first_name} {s.last_name}</p>
-                      <div className="flex items-center gap-1.5 text-xs text-white/60 mt-1">
+                      <p className="font-bold text-ink text-base">{s.first_name} {s.last_name}</p>
+                      <div className="flex items-center gap-1.5 text-xs text-muted mt-1">
                         <Phone size={12} />
                         {s.phone}
                       </div>
@@ -141,32 +140,32 @@ export default function Proveedores() {
                   </div>
 
                   {s.description && (
-                    <p className="text-xs text-white/50 bg-white/5 px-2.5 py-1.5 rounded-lg">
+                    <p className="text-xs text-muted bg-ink/5 px-2.5 py-1.5 rounded-lg">
                       {s.description}
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5 gap-2">
-                    <button
-                      onClick={() => navigate(`/admin/proveedores/${s.id}/compras`)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-white/80 active:bg-white/15"
+                  <div className="flex items-center justify-between pt-2 border-t border-line gap-2">
+                    <Link
+                      to={`/admin/proveedores/${s.id}/compras`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-ink/5 hover:bg-ink/5 text-ink active:bg-ink/5"
                     >
                       <History size={13} />
                       Compras
-                    </button>
+                    </Link>
                     <button
-                      onClick={() => openEdit(s)}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white"
+                      aria-label={`Editar proveedor ${s.first_name} ${s.last_name}`} onClick={() => openEdit(s)}
+                      className="p-2 rounded-xl bg-ink/5 hover:bg-ink/5 text-muted hover:text-ink"
                       title="Editar"
                     >
-                      <Pencil size={15} />
+                      <Pencil aria-hidden="true" size={15} />
                     </button>
                     <button
                       onClick={() => toggleActive(s)}
                       className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors active:scale-95 ${
                         s.is_active
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                          : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                          ? 'bg-danger-soft0/10 text-danger hover:bg-danger-soft0/20'
+                          : 'bg-emerald-500/10 text-success hover:bg-emerald-500/20'
                       }`}
                     >
                       {s.is_active ? 'Desactivar' : 'Activar'}
@@ -192,15 +191,15 @@ export default function Proveedores() {
                   {filtered.map(s => (
                     <tr key={s.id} className={!s.is_active ? 'opacity-50' : ''}>
                       <td>
-                        <p className="font-medium text-white">{s.first_name} {s.last_name}</p>
+                        <p className="font-medium text-ink">{s.first_name} {s.last_name}</p>
                       </td>
                       <td>
-                        <div className="flex items-center gap-1.5 text-white/60">
+                        <div className="flex items-center gap-1.5 text-muted">
                           <Phone size={13} />
                           {s.phone}
                         </div>
                       </td>
-                      <td className="text-white/50 text-xs max-w-xs truncate">
+                      <td className="text-muted text-xs max-w-xs truncate">
                         {s.description ?? '-'}
                       </td>
                       <td>
@@ -210,26 +209,26 @@ export default function Proveedores() {
                       </td>
                       <td>
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => navigate(`/admin/proveedores/${s.id}/compras`)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                          <Link
+                            to={`/admin/proveedores/${s.id}/compras`}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-ink/5 hover:bg-ink/5 text-muted hover:text-ink transition-colors"
                             title="Historial de compras"
                           >
                             <History size={13} />
                             Compras
-                          </button>
+                          </Link>
                           <button
-                            onClick={() => openEdit(s)}
-                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/60 hover:text-white transition-colors"
+                            aria-label={`Editar proveedor ${s.first_name} ${s.last_name}`} onClick={() => openEdit(s)}
+                            className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors"
                           >
-                            <Pencil size={15} />
+                            <Pencil aria-hidden="true" size={15} />
                           </button>
                           <button
                             onClick={() => toggleActive(s)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                               s.is_active
-                                ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                ? 'bg-danger-soft0/10 text-danger hover:bg-danger-soft0/20'
+                                : 'bg-emerald-500/10 text-success hover:bg-emerald-500/20'
                             }`}
                           >
                             {s.is_active ? 'Desactivar' : 'Activar'}
@@ -254,8 +253,8 @@ export default function Proveedores() {
           </div>
           <Input id="sup-phone" label="Numero de celular" placeholder="Ej: 77712345" error={errors.phone?.message} {...register('phone')} />
           <div>
-            <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">Descripcion (que nos provee)</label>
-            <textarea rows={2} placeholder="Ej: Pollos frescos del mercado central..." className="input-base resize-none" {...register('description')} />
+            <label className="text-xs font-medium text-muted normal-case tracking-normal block mb-1.5">Descripcion (que nos provee)</label>
+            <textarea rows={2} placeholder="Ej: Pollos frescos del mercado central…" className="input-base resize-none" {...register('description')} />
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" className="flex-1" onClick={() => setModalOpen(false)}>Cancelar</Button>

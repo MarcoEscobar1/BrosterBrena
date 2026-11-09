@@ -9,6 +9,12 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
+tests
+.agents
+.impeccable
+DESIGN.md 
+PRODUCT.md 
+skills-lock.json
 
 # Build output
 dist

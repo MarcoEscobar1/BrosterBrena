@@ -1,3 +1,4 @@
+import { useQueryState } from '../../hooks/useQueryState'
 import { useState } from 'react'
 import { db } from '../../lib/mockDb'
 import Modal from '../../components/ui/Modal'
@@ -27,8 +28,8 @@ const CATEGORY_VARIANTS = { plato: 'orange', refresco: 'purple', extra: 'yellow'
 export default function Productos() {
   const [products,  setProducts]  = useState(() => db.getProducts())
   const [loading,   setLoading]   = useState(false)
-  const [search,    setSearch]    = useState('')
-  const [filterCat, setFilterCat] = useState('all')
+  const [search, setSearch] = useQueryState('search', '')
+  const [filterCat, setFilterCat] = useQueryState('filterCat', 'all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing,   setEditing]   = useState(null)
   const [saving,    setSaving]    = useState(false)
@@ -99,36 +100,35 @@ export default function Productos() {
   })
 
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-4 animate-fade-in">
+    <div className="p-4 md:p-6 flex flex-col gap-4 ">
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-white">Productos</h1>
-            <p className="text-xs text-white/60">{products.length} registrados</p>
+            <h1 className="text-lg md:text-xl font-bold text-ink">Productos</h1>
+            <p className="text-xs text-muted">{products.length} registrados</p>
           </div>
         </div>
         <Button variant="primary" onClick={openCreate} className="w-full sm:w-auto">
-          <Plus size={16} />Nuevo Producto
+          <Plus aria-hidden="true" size={16} />Nuevo Producto
         </Button>
       </div>
 
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/60" />
-          <input
-            placeholder="Buscar producto..."
+          <Search aria-hidden="true" size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input name="search" autoComplete="off" aria-label="Buscar producto" placeholder="Buscar producto…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="input-base pl-9"
           />
         </div>
-        <select
+        <select aria-label="Categoría de productos" name="category"
           value={filterCat}
           onChange={e => setFilterCat(e.target.value)}
           className="input-base sm:w-44"
-          style={{ colorScheme: 'dark' }}
+
         >
           <option value="all">Todas las categorias</option>
           <option value="plato">Platos</option>
@@ -141,7 +141,7 @@ export default function Productos() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : filtered.length === 0 ? (
-        <div className="card text-center py-16 text-white/60">
+        <div className="card text-center py-16 text-muted">
           <p>No se encontraron productos</p>
         </div>
       ) : (
@@ -155,15 +155,15 @@ export default function Productos() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-white text-sm">{product.name}</p>
+                    <p className="font-semibold text-ink text-sm">{product.name}</p>
                     <Badge variant={CATEGORY_VARIANTS[product.category]}>
                       {CATEGORY_LABELS[product.category]}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="font-bold text-white">Bs {Number(product.price).toFixed(2)}</span>
+                    <span className="font-bold text-ink">Bs {Number(product.price).toFixed(2)}</span>
                     {product.chicken_pieces_required > 0 && (
-                      <span className="text-xs text-brand-400">{product.chicken_pieces_required} presas</span>
+                      <span className="text-xs text-brand-700">{product.chicken_pieces_required} presas</span>
                     )}
                     <Badge variant={product.is_active ? 'green' : 'gray'} className="ml-auto">
                       {product.is_active ? 'Activo' : 'Inactivo'}
@@ -172,17 +172,17 @@ export default function Productos() {
                 </div>
                 <div className="flex gap-1.5 shrink-0">
                   <button
-                    onClick={() => openEdit(product)}
-                    className="p-2 rounded-xl bg-white/5 text-white/50 hover:text-white"
+                    aria-label={`Editar ${product.name}`} onClick={() => openEdit(product)}
+                    className="p-2 rounded-xl bg-ink/5 text-muted hover:text-ink"
                   >
-                    <Pencil size={15} />
+                    <Pencil aria-hidden="true" size={15} />
                   </button>
                   <button
                     onClick={() => toggleActive(product)}
                     className={`px-2.5 py-1.5 rounded-xl text-xs font-medium ${
                       product.is_active
-                        ? 'bg-red-500/10 text-red-400'
-                        : 'bg-emerald-500/10 text-emerald-400'
+                        ? 'bg-danger-soft0/10 text-danger'
+                        : 'bg-emerald-500/10 text-success'
                     }`}
                   >
                     {product.is_active ? 'Desact.' : 'Activar'}
@@ -210,31 +210,31 @@ export default function Productos() {
                   {filtered.map(product => (
                     <tr key={product.id} className={!product.is_active ? 'opacity-50' : ''}>
                       <td>
-                        <p className="font-medium text-white">{product.name}</p>
+                        <p className="font-medium text-ink">{product.name}</p>
                         {product.description && (
-                          <p className="text-xs text-white/60 mt-0.5">{product.description}</p>
+                          <p className="text-xs text-muted mt-0.5">{product.description}</p>
                         )}
                       </td>
                       <td><Badge variant={CATEGORY_VARIANTS[product.category]}>{CATEGORY_LABELS[product.category]}</Badge></td>
-                      <td className="font-semibold text-white">Bs {Number(product.price).toFixed(2)}</td>
+                      <td className="font-semibold text-ink">Bs {Number(product.price).toFixed(2)}</td>
                       <td>
                         {product.chicken_pieces_required > 0
-                          ? <span className="text-brand-400">{product.chicken_pieces_required} presas</span>
-                          : <span className="text-white/60">—</span>
+                          ? <span className="text-brand-700">{product.chicken_pieces_required} presas</span>
+                          : <span className="text-muted">—</span>
                         }
                       </td>
                       <td><Badge variant={product.is_active ? 'green' : 'gray'}>{product.is_active ? 'Activo' : 'Inactivo'}</Badge></td>
                       <td>
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => openEdit(product)} className="p-1.5 rounded-lg hover:bg-white/8 text-white/60 hover:text-white transition-colors">
-                            <Pencil size={15} />
+                          <button aria-label={`Editar ${product.name}`} onClick={() => openEdit(product)} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
+                            <Pencil aria-hidden="true" size={15} />
                           </button>
                           <button
                             onClick={() => toggleActive(product)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                               product.is_active
-                                ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                ? 'bg-danger-soft0/10 text-danger hover:bg-danger-soft0/20'
+                                : 'bg-emerald-500/10 text-success hover:bg-emerald-500/20'
                             }`}
                           >
                             {product.is_active ? 'Desactivar' : 'Activar'}
@@ -255,8 +255,8 @@ export default function Productos() {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Input id="prod-name" label="Nombre" placeholder="Ej: Economico" error={errors.name?.message} {...register('name')} />
           <div>
-            <label className="text-xs font-medium text-white/60 uppercase tracking-wide block mb-1.5">Descripcion (opcional)</label>
-            <textarea placeholder="Descripcion..." rows={2} className="input-base resize-none" {...register('description')} />
+            <label className="text-xs font-medium text-muted normal-case tracking-normal block mb-1.5">Descripcion (opcional)</label>
+            <textarea placeholder="Descripcion…" rows={2} className="input-base resize-none" {...register('description')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input id="prod-price" label="Precio (Bs)" type="number" step="0.01" min="0" error={errors.price?.message} {...register('price')} />
@@ -268,9 +268,9 @@ export default function Productos() {
             <option value="refresco">Refresco</option>
           </Select>
           {editing && (
-            <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-400 border border-white/8 cursor-pointer">
+            <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-400 border border-line cursor-pointer">
               <input type="checkbox" className="accent-brand-500 w-4 h-4" {...register('is_active')} />
-              <span className="text-sm text-white">Producto activo (visible en POS)</span>
+              <span className="text-sm text-ink">Producto activo (visible en POS)</span>
             </label>
           )}
           <div className="flex gap-3 pt-1">

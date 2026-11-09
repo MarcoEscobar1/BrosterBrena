@@ -9,6 +9,8 @@ export function useDrawerFocus(open, onClose) {
     const getControls = () => [...panel.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')]
       .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length)
     const onKeyDown = event => {
+      const activeDialog = [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].at(-1)
+      if (activeDialog && activeDialog !== panel) return
       if (event.key === 'Escape') { event.preventDefault(); onClose(); return }
       if (event.key !== 'Tab') return
       const controls = getControls()

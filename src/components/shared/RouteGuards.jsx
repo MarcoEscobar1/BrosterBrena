@@ -47,7 +47,7 @@ function FullPageSpinner() {
     <div className="min-h-screen bg-surface-300 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <Spinner size="lg" />
-        <p className="text-white/60 text-sm">Cargando...</p>
+        <p className="text-muted text-sm">Cargando…</p>
       </div>
     </div>
   )
