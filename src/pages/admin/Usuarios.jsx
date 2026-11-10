@@ -123,7 +123,7 @@ export default function Usuarios() {
                 <div className="ml-auto shrink-0">
                   <Badge variant={p.role === 'admin' ? 'orange' : 'purple'}>
                     {p.role === 'admin' ? <Shield size={10} /> : <User size={10} />}
-                    {p.role}
+                    {p.role === 'admin' ? 'Administrador' : 'Empleado'}
                   </Badge>
                 </div>
               </div>
